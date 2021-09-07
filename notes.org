@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2021-09-07 19:03:44 krylon>
+# Time-stamp: <2021-09-07 22:26:25 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -18,10 +18,15 @@ yet how that would factor in.
 * Clock
   Here I keep track of the time I waste on this futile effort.
   #+BEGIN: clocktable :scope file :maxlevel 202 :emphasize t
-  #+CAPTION: Clock summary at [2021-09-06 Mo 18:48]
-  | Headline     | Time   |
-  |--------------+--------|
-  | *Total time* | *0:00* |
+  #+CAPTION: Clock summary at [2021-09-07 Di 22:26]
+  | Headline         | Time   |        |
+  |------------------+--------+--------|
+  | *Total time*     | *6:17* |        |
+  |------------------+--------+--------|
+  | *Moving parts*   | *6:17* |        |
+  | \_  /Data types/ |        | /2:40/ |
+  | \_  /Database/   |        | /1:47/ |
+  | \_  /Scanner/    |        | /1:50/ |
   #+END:
 
 * Moving parts
@@ -32,10 +37,15 @@ yet how that would factor in.
    I will need types to describe what I am dealing with.
 ** Database
    :LOGBOOK:
-   CLOCK: [2021-09-07 Di 18:45]
+   CLOCK: [2021-09-07 Di 18:45]--[2021-09-07 Di 20:32] =>  1:47
    :END:
    I am going to use SQLite, because for our use case, it is awesome.
    Plus, I like SQL.
+** Scanner
+   :LOGBOOK:
+   CLOCK: [2021-09-07 Di 20:36]--[2021-09-07 Di 22:26] =>  1:50
+   :END:
+   Scanner walks directory trees looking for audio files. Roughly speaking.
 ** GUI
    Like I said, we're going to use gotk3, the Go bindings to Gtk3. I think
    Gtk4 is a thing, but ... whatever, I'm still slightly annoyed I cannot just

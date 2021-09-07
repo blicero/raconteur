@@ -1,0 +1,44 @@
+# -*- mode: org; fill-column: 78; -*-
+# Time-stamp: <2021-09-07 19:03:44 krylon>
+#
+#+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
+#+TAGS: database(d) design(e), meditation(m)
+#+TAGS: optimize(o) refactor(r) cleanup(c)
+#+TODO: TODO(t)  RESEARCH(r) IMPLEMENT(i) TEST(e) | DONE(d) FAILED(f) CANCELLED(c)
+#+TODO: MEDITATE(m) PLANNING(p)
+#+PRIORITIES: A G D
+
+Raconteur is an application to play audio books or podcasts.
+My main goal, though, is to learn about GUI programming (which have done
+before but suck at), specifically Gtk3 (I have prior experience using Gtk2
+from C, Python, Perl, and Ruby), and its Go bindings.
+Also, this might be a good opportunity to learn about dbus, but I am not sure
+yet how that would factor in.
+
+* Clock
+  Here I keep track of the time I waste on this futile effort.
+  #+BEGIN: clocktable :scope file :maxlevel 202 :emphasize t
+  #+CAPTION: Clock summary at [2021-09-06 Mo 18:48]
+  | Headline     | Time   |
+  |--------------+--------|
+  | *Total time* | *0:00* |
+  #+END:
+
+* Moving parts
+** Data types
+   :LOGBOOK:
+   CLOCK: [2021-09-06 Mo 20:34]--[2021-09-06 Mo 23:14] =>  2:40
+   :END:
+   I will need types to describe what I am dealing with.
+** Database
+   :LOGBOOK:
+   CLOCK: [2021-09-07 Di 18:45]
+   :END:
+   I am going to use SQLite, because for our use case, it is awesome.
+   Plus, I like SQL.
+** GUI
+   Like I said, we're going to use gotk3, the Go bindings to Gtk3. I think
+   Gtk4 is a thing, but ... whatever, I'm still slightly annoyed I cannot just
+   use Gtk2, although the changes seem to not be that drastic.
+* Questions
+* Bugs

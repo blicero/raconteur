@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2021-09-07 22:26:25 krylon>
+# Time-stamp: <2021-09-11 17:56:25 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -18,14 +18,14 @@ yet how that would factor in.
 * Clock
   Here I keep track of the time I waste on this futile effort.
   #+BEGIN: clocktable :scope file :maxlevel 202 :emphasize t
-  #+CAPTION: Clock summary at [2021-09-07 Di 22:26]
+  #+CAPTION: Clock summary at [2021-09-11 Sa 17:56]
   | Headline         | Time   |        |
   |------------------+--------+--------|
-  | *Total time*     | *6:17* |        |
+  | *Total time*     | *8:23* |        |
   |------------------+--------+--------|
-  | *Moving parts*   | *6:17* |        |
+  | *Moving parts*   | *8:23* |        |
   | \_  /Data types/ |        | /2:40/ |
-  | \_  /Database/   |        | /1:47/ |
+  | \_  /Database/   |        | /3:53/ |
   | \_  /Scanner/    |        | /1:50/ |
   #+END:
 
@@ -37,6 +37,7 @@ yet how that would factor in.
    I will need types to describe what I am dealing with.
 ** Database
    :LOGBOOK:
+   CLOCK: [2021-09-11 Sa 15:50]--[2021-09-11 Sa 17:56] =>  2:06
    CLOCK: [2021-09-07 Di 18:45]--[2021-09-07 Di 20:32] =>  1:47
    :END:
    I am going to use SQLite, because for our use case, it is awesome.

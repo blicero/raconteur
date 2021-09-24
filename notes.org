@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2021-09-11 17:56:25 krylon>
+# Time-stamp: <2021-09-12 00:06:38 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -18,15 +18,15 @@ yet how that would factor in.
 * Clock
   Here I keep track of the time I waste on this futile effort.
   #+BEGIN: clocktable :scope file :maxlevel 202 :emphasize t
-  #+CAPTION: Clock summary at [2021-09-11 Sa 17:56]
-  | Headline         | Time   |        |
-  |------------------+--------+--------|
-  | *Total time*     | *8:23* |        |
-  |------------------+--------+--------|
-  | *Moving parts*   | *8:23* |        |
-  | \_  /Data types/ |        | /2:40/ |
-  | \_  /Database/   |        | /3:53/ |
-  | \_  /Scanner/    |        | /1:50/ |
+  #+CAPTION: Clock summary at [2021-09-12 So 00:06]
+  | Headline         | Time    |        |
+  |------------------+---------+--------|
+  | *Total time*     | *11:01* |        |
+  |------------------+---------+--------|
+  | *Moving parts*   | *11:01* |        |
+  | \_  /Data types/ |         | /2:40/ |
+  | \_  /Database/   |         | /6:31/ |
+  | \_  /Scanner/    |         | /1:50/ |
   #+END:
 
 * Moving parts
@@ -37,6 +37,8 @@ yet how that would factor in.
    I will need types to describe what I am dealing with.
 ** Database
    :LOGBOOK:
+   CLOCK: [2021-09-11 Sa 22:27]--[2021-09-12 So 00:06] =>  1:39
+   CLOCK: [2021-09-11 Sa 19:50]--[2021-09-11 Sa 20:49] =>  0:59
    CLOCK: [2021-09-11 Sa 15:50]--[2021-09-11 Sa 17:56] =>  2:06
    CLOCK: [2021-09-07 Di 18:45]--[2021-09-07 Di 20:32] =>  1:47
    :END:

@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 08. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2021-09-11 17:56:09 krylon>
+// Time-stamp: <2021-09-12 00:03:37 krylon>
 
 // Package db provides a wrapper around the actual database connection.
 package db
@@ -982,6 +982,7 @@ EXEC_QUERY:
 	return nil, nil
 } // func (db *Database) FileGetByID(id int64) (*objects.File, error)
 
+// FileGetByPath looks up a File by its file system path.
 func (db *Database) FileGetByPath(path string) (*objects.File, error) {
 	const qid query.ID = query.FileGetByPath
 	var (
@@ -1030,3 +1031,143 @@ EXEC_QUERY:
 
 	return nil, nil
 } // func (db *Database) FileGetByPath(path string) (*objects.File, error)
+
+// FileSetTitle update the title of a file.
+func (db *Database) FileSetTitle(f *objects.File, title string) error {
+	const qid query.ID = query.FileSetTitle
+	var (
+		err    error
+		msg    string
+		stmt   *sql.Stmt
+		tx     *sql.Tx
+		status bool
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid.String(),
+			err.Error())
+		return err
+	} else if db.tx != nil {
+		tx = db.tx
+	} else {
+	BEGIN_AD_HOC:
+		if tx, err = db.db.Begin(); err != nil {
+			if worthARetry(err) {
+				waitForRetry()
+				goto BEGIN_AD_HOC
+			} else {
+				msg = fmt.Sprintf("Error starting transaction: %s\n",
+					err.Error())
+				db.log.Printf("[ERROR] %s\n", msg)
+				return errors.New(msg)
+			}
+
+		} else {
+			defer func() {
+				var err2 error
+				if status {
+					if err2 = tx.Commit(); err2 != nil {
+						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
+							err2.Error())
+					}
+				} else if err2 = tx.Rollback(); err2 != nil {
+					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
+						err2.Error())
+				}
+			}()
+		}
+	}
+
+	stmt = tx.Stmt(stmt)
+
+EXEC_QUERY:
+	if _, err = stmt.Exec(title, f.ID); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		} else {
+			err = fmt.Errorf("Cannot set Title of File %q (%d) to %q: %s",
+				f.DisplayTitle(),
+				f.ID,
+				title,
+				err.Error())
+			db.log.Printf("[ERROR] %s\n", err.Error())
+			return err
+		}
+	}
+
+	status = true
+	f.Title = title
+	return nil
+} // func (db *Database) FileSetTitle(f *objects.File, title string) error
+
+// FileSetPosition sets the playback position of a File.
+func (db *Database) FileSetPosition(f *objects.File, pos int) error {
+	const qid query.ID = query.FileSetPosition
+	var (
+		err    error
+		msg    string
+		stmt   *sql.Stmt
+		tx     *sql.Tx
+		status bool
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid.String(),
+			err.Error())
+		return err
+	} else if db.tx != nil {
+		tx = db.tx
+	} else {
+	BEGIN_AD_HOC:
+		if tx, err = db.db.Begin(); err != nil {
+			if worthARetry(err) {
+				waitForRetry()
+				goto BEGIN_AD_HOC
+			} else {
+				msg = fmt.Sprintf("Error starting transaction: %s\n",
+					err.Error())
+				db.log.Printf("[ERROR] %s\n", msg)
+				return errors.New(msg)
+			}
+
+		} else {
+			defer func() {
+				var err2 error
+				if status {
+					if err2 = tx.Commit(); err2 != nil {
+						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
+							err2.Error())
+					}
+				} else if err2 = tx.Rollback(); err2 != nil {
+					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
+						err2.Error())
+				}
+			}()
+		}
+	}
+
+	stmt = tx.Stmt(stmt)
+
+EXEC_QUERY:
+	if _, err = stmt.Exec(pos, f.ID); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		} else {
+			err = fmt.Errorf("Cannot set Position of File %q (%d) to %d: %s",
+				f.DisplayTitle(),
+				f.ID,
+				pos,
+				err.Error())
+			db.log.Printf("[ERROR] %s\n", err.Error())
+			return err
+		}
+	}
+
+	status = true
+	f.Position = pos
+	return nil
+} // func (db *Database) FileSetPosition(f *objects.File, pos int) error

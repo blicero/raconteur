@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 02. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-05-30 20:34:44 krylon>
+// Time-stamp: <2022-05-30 20:45:03 krylon>
 
 // +build ignore
 
@@ -226,7 +226,7 @@ This flag is not case-sensitive.`, strings.Join(orderedSteps, ", ")))
 	if steps["build"] {
 		var output []byte
 
-		dbg.Println("[INFO] Building blockbuster\n")
+		dbg.Println("[INFO] Building raconteur\n")
 
 		// Put aside a possibly existing binary
 		if err = backupExecutable(); err != nil {
@@ -246,7 +246,7 @@ This flag is not case-sensitive.`, strings.Join(orderedSteps, ", ")))
 		// }
 		var cmd = exec.Command("go", args...)
 		if output, err = cmd.CombinedOutput(); err != nil {
-			dbg.Printf("[ERROR] Error building blockbuster: %s\n%s\n",
+			dbg.Printf("[ERROR] Error building raconteur: %s\n%s\n",
 				err.Error(),
 				output)
 			os.Exit(1)
@@ -349,7 +349,7 @@ func worker(n int, op string, pkgq <-chan string, errq chan<- error, wg *sync.Wa
 	defer wg.Done()
 
 	for folder := range pkgq {
-		pkg = "github.com/blicero/blockbuster/" + folder
+		pkg = "github.com/blicero/raconteur/" + folder
 		dbg.Printf("[TRACE] Worker %d call %s on %s\n",
 			n,
 			op,
@@ -440,7 +440,7 @@ func initLog(min string) error {
 		writer io.Writer
 		// Trailing space because Logger does not seem to insert one
 		// between fields of the line.
-		logName = "blockbuster.build "
+		logName = "raconteur.build "
 	)
 
 	// fmt.Printf("Creating Logger with minLevel = %q\n",
@@ -470,8 +470,8 @@ func initLog(min string) error {
 
 func backupExecutable() error {
 	const (
-		execPath   = "blockbuster"
-		backupPath = "bak.blockbuster"
+		execPath   = "raconteur"
+		backupPath = "bak.raconteur"
 	)
 	var (
 		exists bool

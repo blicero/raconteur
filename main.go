@@ -2,12 +2,28 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 30. 05. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-05-30 20:32:50 krylon>
+// Time-stamp: <2022-05-31 20:18:53 krylon>
 
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+
+	"github.com/blicero/raconteur/ui"
+)
 
 func main() {
-	fmt.Println("IMPLEMENT ME!!!")
+	var (
+		win *ui.RWin
+		err error
+	)
+
+	if win, err = ui.Create(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating UI: %s\n", err.Error())
+		os.Exit(1)
+	}
+
+	win.Run()
+
 } // func main()

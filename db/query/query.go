@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2021-09-11 15:59:07 krylon>
+// Time-stamp: <2022-05-31 21:45:02 krylon>
 
 // Package query provides symbolic constants to identify SQL queries.
 package query
@@ -24,4 +24,5 @@ const (
 	FileGetByProgram
 	FileSetTitle
 	FileSetPosition
+	FileSetProgram
 )

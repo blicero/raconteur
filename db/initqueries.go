@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2021-09-07 20:16:20 krylon>
+// Time-stamp: <2022-05-31 21:30:15 krylon>
 
 package db
 
@@ -12,20 +12,24 @@ CREATE TABLE program (
     id                   INTEGER PRIMARY KEY,
     title                TEXT UNIQUE NOT NULL,
     creator              TEXT NOT NULL DEFAULT '',
+    url                  TEXT
 )
 `,
 	`
 CREATE TABLE file (
     id                   INTEGER PRIMARY KEY,
-    program_id           INTEGER NOT NULL,
+    program_id           INTEGER,
     path                 TEXT UNIQUE NOT NULL,
     title                TEXT NOT NULL DEFAULT '',
     position             TEXT NOT NULL DEFAULT '',
     last_played          INTEGER NOT NULL DEFAULT 0,
+    url                  TEXT,
     FOREIGN KEY (program_id) REFERENCES program (id)
         ON DELETE CASCADE
         ON UPDATE RESTRICT
 )
 `,
 	"CREATE INDEX file_prog_idx ON file (program_id)",
+	"CREATE INDEX file_path_idx ON file (path)",
+	"CREATE INDEX file_title_idx ON file (title)",
 }

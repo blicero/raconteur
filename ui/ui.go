@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-01 23:43:11 krylon>
+// Time-stamp: <2022-06-01 23:53:39 krylon>
 
 package ui
 
@@ -126,6 +126,14 @@ func Create() (*RWin, error) {
 		return nil, err
 	} else if win.searchLbl, err = gtk.LabelNew("Search: "); err != nil {
 		win.log.Printf("[ERROR] Cannot create search label: %s\n",
+			err.Error())
+		return nil, err
+	} else if win.searchEntry, err = gtk.EntryNew(); err != nil {
+		win.log.Printf("[ERROR] Cannot create search entry: %s\n",
+			err.Error())
+		return nil, err
+	} else if win.scr, err = gtk.ScrolledWindowNew(nil, nil); err != nil {
+		win.log.Printf("[ERROR] Cannot create ScrolledWindow: %s\n",
 			err.Error())
 		return nil, err
 	} else if win.statusbar, err = gtk.StatusbarNew(); err != nil {

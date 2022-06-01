@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-05-31 20:21:38 krylon>
+// Time-stamp: <2022-06-01 19:04:20 krylon>
 
 // Package scanner implements processing directory trees looking for files that,
 // allegedly, are podcast episodes, audio books, or parts of audio books.
@@ -30,7 +30,6 @@ var suffixPattern = regexp.MustCompile("[.](?:mp3|m4[ab]|mpga|og[agm]|opus|wma|f
 // Walker implements traversing directory trees to find audio files.
 type Walker struct {
 	log   *log.Logger
-	root  string
 	db    *db.Database
 	Files chan *objects.File
 }
@@ -38,7 +37,6 @@ type Walker struct {
 // New creates a new Walker for the given folder.
 func New(root string, conn *db.Database) (*Walker, error) {
 	var w = &Walker{
-		root:  root,
 		db:    conn,
 		Files: make(chan *objects.File, 8),
 	}
@@ -56,9 +54,9 @@ func New(root string, conn *db.Database) (*Walker, error) {
 } // func New(root string) (*Walker, error)
 
 // Walk initiates the traversal of the Walker's directory tree.
-func (w *Walker) Walk() {
-
-} // func (w *Walker) Walk()
+func (w *Walker) Walk(root string) error {
+	return fs.WalkDir(nil, root, w.visit)
+} // func (w *Walker) Walk(root string) error
 
 func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 	if incoming != nil {
@@ -68,14 +66,14 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 		if d.IsDir() {
 			return nil // fs.SkipDir
 		} else {
-			return nil
+			return incoming
 		}
 	}
 
 	var (
 		info fs.FileInfo
 		err  error
-		file *objects.File
+		f    *objects.File
 	)
 
 	if !suffixPattern.MatchString(path) {
@@ -84,16 +82,25 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 		return err
 	} else if info.Size() < minSize {
 		return nil
-	} else if file, err = w.db.FileGetByPath(path); err != nil {
+	} else if f, err = w.db.FileGetByPath(path); err != nil {
 		w.log.Printf("[ERROR] Failed to look up file %s: %s\n",
 			path,
 			err.Error())
 		return nil
-	} else if file == nil {
-		file = &objects.File{
+	} else if f == nil {
+		f = &objects.File{
 			Path: path,
 		}
+
+		if err = w.db.FileAdd(f); err != nil {
+			w.log.Printf("[ERROR] Cannot add file %s to database: %s\n",
+				path,
+				err.Error())
+			return err
+		}
 	}
+
+	w.Files <- f
 
 	return nil
 } // func (w *Walker) visit(path string, d fs.DirEntry, err error) error

@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-05-31 21:43:55 krylon>
+// Time-stamp: <2022-06-02 19:20:35 krylon>
 
 package db
 
@@ -18,7 +18,8 @@ var dbQueries = map[query.ID]string{
 	query.FileDel:           "DELETE FROM file WHERE id = ?",
 	query.FileGetByID:       "SELECT program_id, path, title, position, last_played FROM file WHERE id = ?",
 	query.FileGetByPath:     "SELECT id, program_id, title, position, last_played FROM file WHERE path = ?",
-	query.FileGetByProgram:  "SELECT id, title, position, last_played FROM file WHERE program_id = ?",
+	query.FileGetByProgram:  "SELECT id, path, title, position, last_played FROM file WHERE program_id = ?",
+	query.FileGetNoProgram:  "SELECT id, path, title, position, last_played FROM file WHERE program_id IS NULL",
 	query.FileSetTitle:      "UPDATE file SET title = ? WHERE id = ?",
 	query.FileSetPosition:   "UPDATE file SET position = ? WHERE id = ?",
 	query.FileSetProgram:    "UPDATE file SET program_id = ? WHERE id = ?",

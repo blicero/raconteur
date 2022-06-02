@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 08. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-05-31 22:38:05 krylon>
+// Time-stamp: <2022-06-02 19:30:03 krylon>
 
 // Package db provides a wrapper around the actual database connection.
 package db
@@ -1033,6 +1033,120 @@ EXEC_QUERY:
 
 	return nil, nil
 } // func (db *Database) FileGetByPath(path string) (*objects.File, error)
+
+// FileGetByProgram looks up all the files belonging to the given Program.
+func (db *Database) FileGetByProgram(p *objects.Program) ([]objects.File, error) {
+	const qid query.ID = query.FileGetByProgram
+	var (
+		err  error
+		stmt *sql.Stmt
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid,
+			err.Error())
+		return nil, err
+	} else if db.tx != nil {
+		stmt = db.tx.Stmt(stmt)
+	}
+
+	var rows *sql.Rows
+
+EXEC_QUERY:
+	if rows, err = stmt.Query(p.ID); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		}
+
+		return nil, err
+	}
+
+	defer rows.Close() // nolint: errcheck,gosec
+
+	var res = make([]objects.File, 0, 8)
+
+	for rows.Next() {
+		var (
+			stamp int64
+			f     = objects.File{ProgramID: p.ID}
+		)
+
+		if err = rows.Scan(
+			&f.ID,
+			&f.Path,
+			&f.Title,
+			&f.Position,
+			&stamp); err != nil {
+			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
+			return nil, err
+		}
+
+		f.LastPlayed = time.Unix(stamp, 0)
+
+		res = append(res, f)
+	}
+
+	return res, nil
+} // func (db *Database) FileGetByProgram(p *objects.Program) ([]objects.File, error)
+
+// FileGetNoProgram looks up all the files that have not been assigned to a Program.
+func (db *Database) FileGetNoProgram(p *objects.Program) ([]objects.File, error) {
+	const qid query.ID = query.FileGetNoProgram
+	var (
+		err  error
+		stmt *sql.Stmt
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid,
+			err.Error())
+		return nil, err
+	} else if db.tx != nil {
+		stmt = db.tx.Stmt(stmt)
+	}
+
+	var rows *sql.Rows
+
+EXEC_QUERY:
+	if rows, err = stmt.Query(); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		}
+
+		return nil, err
+	}
+
+	defer rows.Close() // nolint: errcheck,gosec
+
+	var res = make([]objects.File, 0, 8)
+
+	for rows.Next() {
+		var (
+			stamp int64
+			f     objects.File
+		)
+
+		if err = rows.Scan(
+			&f.ID,
+			&f.Path,
+			&f.Title,
+			&f.Position,
+			&stamp); err != nil {
+			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
+			return nil, err
+		}
+
+		f.LastPlayed = time.Unix(stamp, 0)
+
+		res = append(res, f)
+	}
+
+	return res, nil
+} // func (db *Database) FileGetNoProgram(p *objects.Program) ([]objects.File, error)
 
 // FileSetTitle update the title of a file.
 func (db *Database) FileSetTitle(f *objects.File, title string) error {

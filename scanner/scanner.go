@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-01 19:04:20 krylon>
+// Time-stamp: <2022-06-02 22:51:32 krylon>
 
 // Package scanner implements processing directory trees looking for files that,
 // allegedly, are podcast episodes, audio books, or parts of audio books.
@@ -14,6 +14,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"sync"
 
 	"github.com/blicero/raconteur/common"
 	"github.com/blicero/raconteur/db"
@@ -30,12 +31,13 @@ var suffixPattern = regexp.MustCompile("[.](?:mp3|m4[ab]|mpga|og[agm]|opus|wma|f
 // Walker implements traversing directory trees to find audio files.
 type Walker struct {
 	log   *log.Logger
+	lock  sync.Mutex
 	db    *db.Database
 	Files chan *objects.File
 }
 
 // New creates a new Walker for the given folder.
-func New(root string, conn *db.Database) (*Walker, error) {
+func New(conn *db.Database) (*Walker, error) {
 	var w = &Walker{
 		db:    conn,
 		Files: make(chan *objects.File, 8),
@@ -55,7 +57,13 @@ func New(root string, conn *db.Database) (*Walker, error) {
 
 // Walk initiates the traversal of the Walker's directory tree.
 func (w *Walker) Walk(root string) error {
-	return fs.WalkDir(nil, root, w.visit)
+	w.log.Printf("[INFO] Scan %s\n", root)
+	defer w.log.Printf("[INFO] Done scanning %s\n", root)
+
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
+	return fs.WalkDir(os.DirFS(root), "/", w.visit)
 } // func (w *Walker) Walk(root string) error
 
 func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
@@ -63,11 +71,11 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 		w.log.Printf("[INFO] Incoming error for %s: %s\n",
 			path,
 			incoming.Error())
-		if d.IsDir() {
-			return nil // fs.SkipDir
-		} else {
-			return incoming
-		}
+		return nil // incoming
+	}
+
+	if d.IsDir() {
+		return nil
 	}
 
 	var (

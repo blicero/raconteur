@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 08. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-02 19:30:03 krylon>
+// Time-stamp: <2022-06-03 19:39:41 krylon>
 
 // Package db provides a wrapper around the actual database connection.
 package db
@@ -1092,7 +1092,7 @@ EXEC_QUERY:
 } // func (db *Database) FileGetByProgram(p *objects.Program) ([]objects.File, error)
 
 // FileGetNoProgram looks up all the files that have not been assigned to a Program.
-func (db *Database) FileGetNoProgram(p *objects.Program) ([]objects.File, error) {
+func (db *Database) FileGetNoProgram() ([]objects.File, error) {
 	const qid query.ID = query.FileGetNoProgram
 	var (
 		err  error
@@ -1146,7 +1146,7 @@ EXEC_QUERY:
 	}
 
 	return res, nil
-} // func (db *Database) FileGetNoProgram(p *objects.Program) ([]objects.File, error)
+} // func (db *Database) FileGetNoProgram() ([]objects.File, error)
 
 // FileSetTitle update the title of a file.
 func (db *Database) FileSetTitle(f *objects.File, title string) error {

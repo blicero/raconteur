@@ -1,6 +1,6 @@
 module github.com/blicero/raconteur
 
-go 1.17
+go 1.18
 
 require (
 	github.com/blicero/krylib v0.0.0-20210821183726-381c76f977eb

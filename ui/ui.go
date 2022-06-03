@@ -2,13 +2,14 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-03 19:47:33 krylon>
+// Time-stamp: <2022-06-03 23:06:33 krylon>
 
 package ui
 
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"sync"
 	"time"
 
@@ -23,7 +24,7 @@ import (
 )
 
 const (
-	ckFileInterval = time.Millisecond * 200
+	ckFileInterval = time.Millisecond * 25
 )
 
 // type tabContent struct {
@@ -385,6 +386,7 @@ func (w *RWin) initializeMenu() error {
 	// Handlers!
 	quitItem.Connect("activate", gtk.MainQuit)
 	scanItem.Connect("activate", w.scanFolder)
+	progAddItem.Connect("activate", w.handleAddProgram)
 
 	fileMenu.Append(scanItem)
 	fileMenu.Append(quitItem)
@@ -491,6 +493,146 @@ func (w *RWin) scanFolder() {
 		go w.scanner.Walk(path)
 	}
 } // func (w *RWin) scanFolder()
+
+func (w *RWin) handleAddProgram() {
+	var (
+		err                    error
+		dlg                    *gtk.Dialog
+		p                      objects.Program
+		s                      string
+		dbox                   *gtk.Box
+		grid                   *gtk.Grid
+		uLbl, tLbl, cLbl       *gtk.Label
+		uEntry, tEntry, cEntry *gtk.Entry
+	)
+
+	if dlg, err = gtk.DialogNewWithButtons(
+		"Add Program",
+		w.win,
+		gtk.DIALOG_MODAL,
+		[]any{
+			"_Cancel",
+			gtk.RESPONSE_CANCEL,
+			"_OK",
+			gtk.RESPONSE_OK,
+		}); err != nil {
+		w.log.Printf("[ERROR] Cannot create dialog for adding Program: %s\n",
+			err.Error())
+		return
+	}
+
+	defer dlg.Close()
+
+	if _, err = dlg.AddButton("OK", gtk.RESPONSE_OK); err != nil {
+		w.log.Printf("[ERROR] Cannot add OK button to AddProgram Dialog: %s\n",
+			err.Error())
+		return
+	} else if grid, err = gtk.GridNew(); err != nil {
+		w.log.Printf("[ERROR] Cannot create gtk.Grid for AddPerson Dialog: %s\n",
+			err.Error())
+		return
+	} else if uLbl, err = gtk.LabelNew("URL:"); err != nil {
+		w.log.Printf("[ERROR] Cannot create URL Label: %s\n",
+			err.Error())
+		return
+	} else if tLbl, err = gtk.LabelNew("Title:"); err != nil {
+		w.log.Printf("[ERROR] Cannot create Title Label: %s\n",
+			err.Error())
+		return
+	} else if cLbl, err = gtk.LabelNew("Creator:"); err != nil {
+		w.log.Printf("[ERROR] Cannot create Creator Label: %s\n",
+			err.Error())
+		return
+	} else if uEntry, err = gtk.EntryNew(); err != nil {
+		w.log.Printf("[ERROR] Cannot create Entry for URL: %s\n",
+			err.Error())
+		return
+	} else if tEntry, err = gtk.EntryNew(); err != nil {
+		w.log.Printf("[ERROR] Cannot create Entry for Title: %s\n",
+			err.Error())
+		return
+	} else if cEntry, err = gtk.EntryNew(); err != nil {
+		w.log.Printf("[ERROR] Cannot create Entry for Creator: %s\n",
+			err.Error())
+		return
+	} else if dbox, err = dlg.GetContentArea(); err != nil {
+		w.log.Printf("[ERROR] Cannot get ContentArea of AddPerson Dialog: %s\n",
+			err.Error())
+		return
+	}
+
+	grid.InsertColumn(0)
+	grid.InsertColumn(1)
+	grid.InsertRow(0)
+	grid.InsertRow(1)
+	grid.InsertRow(2)
+
+	grid.Attach(tLbl, 0, 0, 1, 1)
+	grid.Attach(uLbl, 0, 1, 1, 1)
+	grid.Attach(cLbl, 0, 2, 1, 1)
+	grid.Attach(tEntry, 1, 0, 1, 1)
+	grid.Attach(uEntry, 1, 1, 1, 1)
+	grid.Attach(cEntry, 1, 2, 1, 1)
+
+	dbox.PackStart(grid, true, true, 0)
+	dlg.ShowAll()
+
+	var res = dlg.Run()
+
+	switch res {
+	case gtk.RESPONSE_NONE:
+		fallthrough
+	case gtk.RESPONSE_DELETE_EVENT:
+		fallthrough
+	case gtk.RESPONSE_CLOSE:
+		fallthrough
+	case gtk.RESPONSE_CANCEL:
+		w.log.Println("[DEBUG] User changed their mind about adding a Program. Fine with me.")
+		return
+	case gtk.RESPONSE_OK:
+		// 's ist los, Hund?
+	default:
+		w.log.Printf("[CANTHAPPEN] Well, I did NOT see this coming: %d\n",
+			res)
+		return
+	}
+
+	if p.Title, err = tEntry.GetText(); err != nil {
+		w.log.Printf("[ERROR] Cannot get Title: %s\n",
+			err.Error())
+		return
+	} else if p.Creator, err = cEntry.GetText(); err != nil {
+		w.log.Printf("[ERROR] Cannot get Creator: %s\n",
+			err.Error())
+		return
+	} else if s, err = uEntry.GetText(); err != nil {
+		w.log.Printf("[ERROR] Cannot get URL: %s\n",
+			err.Error())
+		return
+	} else if p.URL, err = url.Parse(s); err != nil {
+		w.log.Printf("[ERROR] Cannot parse URL %q: %s\n",
+			s,
+			err.Error())
+		return
+	}
+
+	var d *db.Database
+
+	d = w.pool.Get()
+	defer w.pool.Put(d)
+
+	if err = d.ProgramAdd(&p); err != nil {
+		w.log.Printf("[ERROR] Cannot add Program %q: %s\n",
+			p.Title,
+			err.Error())
+		return
+	}
+
+	var piter = w.store.Append(nil)
+
+	w.store.SetValue(piter, 0, p.ID)
+	w.store.SetValue(piter, 1, p.Title)
+} // func (w *RWin) handleAddProgram()
 
 func (w *RWin) ckFileQueue() bool {
 	var f *objects.File

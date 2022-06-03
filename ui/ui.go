@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-02 21:57:20 krylon>
+// Time-stamp: <2022-06-03 19:47:33 krylon>
 
 package ui
 
@@ -20,6 +20,10 @@ import (
 	"github.com/blicero/raconteur/scanner"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
+)
+
+const (
+	ckFileInterval = time.Millisecond * 200
 )
 
 // type tabContent struct {
@@ -99,6 +103,7 @@ func createCol(title string, id int) (*gtk.TreeViewColumn, *gtk.CellRendererText
 type RWin struct {
 	pool        *db.Pool
 	scanner     *scanner.Walker
+	ticker      *time.Ticker
 	lock        sync.RWMutex
 	log         *log.Logger
 	win         *gtk.Window
@@ -221,6 +226,9 @@ func Create() (*RWin, error) {
 
 	win.win.Connect("destroy", gtk.MainQuit)
 
+	win.ticker = time.NewTicker(ckFileInterval)
+	glib.IdleAdd(win.ckFileQueue)
+
 	win.win.ShowAll()
 	win.win.SetSizeRequest(960, 540)
 	win.win.SetTitle(fmt.Sprintf("%s %s",
@@ -229,6 +237,23 @@ func Create() (*RWin, error) {
 
 	return win, nil
 } // func Create() (*RWin, error)
+
+// Run execute's gtk's main event loop.
+func (w *RWin) Run() {
+	go func() {
+		var cnt = 0
+		for {
+			time.Sleep(time.Second)
+			cnt++
+			var msg = fmt.Sprintf("%s: Tick #%d",
+				time.Now().Format(common.TimestampFormat),
+				cnt)
+			w.statusbar.Push(666, msg)
+		}
+	}()
+
+	gtk.Main()
+} // func (w *RWin) Run()
 
 func (w *RWin) initializeTree() error {
 	var (
@@ -275,9 +300,44 @@ func (w *RWin) initializeTree() error {
 			}
 
 			w.store.SetValue(fiter, 2, f.ID)
-			w.store.SetValue(fiter, 3, 0)
-			w.store.SetValue(fiter, 4, dur.String())
+			w.store.SetValue(fiter, 3, f.DisplayTitle())
+			w.store.SetValue(fiter, 4, 0)
+			w.store.SetValue(fiter, 5, dur.String())
 		}
+	}
+
+	var (
+		flist []objects.File
+		piter *gtk.TreeIter
+	)
+
+	if flist, err = d.FileGetNoProgram(); err != nil {
+		w.log.Printf("[ERROR] Cannot get Files without an assigned Program: %s\n",
+			err.Error())
+		return err
+	}
+
+	piter = w.store.Prepend(nil)
+	w.store.SetValue(piter, 0, 0)
+	w.store.SetValue(piter, 1, "---")
+
+	for _, f := range flist {
+		var (
+			dur   time.Duration
+			fiter = w.store.Append(piter)
+		)
+
+		if dur, err = f.Duration(); err != nil {
+			w.log.Printf("[ERROR] Cannot get Duration for File %q: %s\n",
+				f.DisplayTitle(),
+				err.Error())
+			continue
+		}
+
+		w.store.SetValue(fiter, 2, f.ID)
+		w.store.SetValue(fiter, 3, f.DisplayTitle())
+		w.store.SetValue(fiter, 4, 0)
+		w.store.SetValue(fiter, 5, dur.String())
 	}
 
 	return nil
@@ -339,23 +399,6 @@ func (w *RWin) initializeMenu() error {
 
 	return nil
 } // func (w *RWin) initializeMenu() error
-
-// Run execute's gtk's main event loop.
-func (w *RWin) Run() {
-	go func() {
-		var cnt = 0
-		for {
-			time.Sleep(time.Second)
-			cnt++
-			var msg = fmt.Sprintf("%s: Tick #%d",
-				time.Now().Format(common.TimestampFormat),
-				cnt)
-			w.statusbar.Push(666, msg)
-		}
-	}()
-
-	gtk.Main()
-} // func (w *RWin) Run()
 
 // nolint: unused
 func (w *RWin) displayMsg(msg string) {
@@ -448,3 +491,43 @@ func (w *RWin) scanFolder() {
 		go w.scanner.Walk(path)
 	}
 } // func (w *RWin) scanFolder()
+
+func (w *RWin) ckFileQueue() bool {
+	var f *objects.File
+
+	// w.log.Printf("[TRACE] Checking file queue\n")
+
+	select {
+	case <-w.ticker.C:
+		// do nothing
+	case f = <-w.scanner.Files:
+		var (
+			err          error
+			dur          time.Duration
+			dstr         string
+			piter, fiter *gtk.TreeIter
+		)
+
+		w.log.Printf("[DEBUG] Got file from queue: %s\n", f.Path)
+
+		if dur, err = f.Duration(); err != nil {
+			w.log.Printf("[ERROR] Cannot determine duration of file %s: %s\n",
+				f.Path,
+				err.Error())
+			dstr = "N/A"
+		} else {
+			dstr = dur.String()
+		}
+
+		piter, _ = w.store.GetIterFirst()
+
+		fiter = w.store.Append(piter)
+
+		w.store.SetValue(fiter, 2, f.ID)
+		w.store.SetValue(fiter, 3, f.DisplayTitle())
+		w.store.SetValue(fiter, 4, 0)
+		w.store.SetValue(fiter, 5, dstr)
+	}
+
+	return true
+} // func (w *RWin) ckFileQueue()

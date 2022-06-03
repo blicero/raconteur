@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-02 22:51:32 krylon>
+// Time-stamp: <2022-06-03 10:38:36 krylon>
 
 // Package scanner implements processing directory trees looking for files that,
 // allegedly, are podcast episodes, audio books, or parts of audio books.
@@ -63,7 +63,7 @@ func (w *Walker) Walk(root string) error {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 
-	return fs.WalkDir(os.DirFS(root), "/", w.visit)
+	return fs.WalkDir(os.DirFS(root), ".", w.visit)
 } // func (w *Walker) Walk(root string) error
 
 func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {

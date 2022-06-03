@@ -204,10 +204,10 @@ func Create() (*RWin, error) {
 	win.searchBox.Add(win.searchEntry)
 	win.win.Add(win.mainBox)
 	win.scr.Add(win.view)
-	win.mainBox.Add(win.menu)
-	win.mainBox.Add(win.searchBox)
-	win.mainBox.Add(win.scr)
-	win.mainBox.Add(win.statusbar)
+	win.mainBox.PackStart(win.menu, false, false, 1)
+	win.mainBox.PackStart(win.searchBox, false, false, 1)
+	win.mainBox.PackStart(win.scr, true, true, 1)
+	win.mainBox.PackStart(win.statusbar, false, false, 1)
 
 	if err = win.initializeTree(); err != nil {
 		win.log.Printf("[ERROR] Failed to initialize TreeView: %s\n",

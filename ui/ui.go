@@ -2,13 +2,14 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-04 18:01:33 krylon>
+// Time-stamp: <2022-06-04 21:21:11 krylon>
 
 package ui
 
 import (
 	"fmt"
 	"log"
+	"math"
 	"net/url"
 	"sync"
 	"time"
@@ -339,7 +340,7 @@ func (w *RWin) initializeTree() error {
 			continue
 		}
 
-		w.store.SetValue(fiter, 0, -1)
+		w.store.SetValue(fiter, 0, math.MinInt32)
 		w.store.SetValue(fiter, 2, f.ID)
 		w.store.SetValue(fiter, 3, f.DisplayTitle())
 		w.store.SetValue(fiter, 4, 0)
@@ -787,4 +788,11 @@ func (w *RWin) handleFileListClick(view *gtk.TreeView, evt *gdk.Event) {
 	w.log.Printf("[DEBUG] PID of clicked-on row is %d, FID is %d\n",
 		pid,
 		fid)
+
+	// First of all, we need to figure out if we clicked on a Program or a File.
+	if pid >= 0 {
+		w.log.Printf("[DEBUG] We clicked on a Program\n")
+	} else {
+		w.log.Printf("[DEBUG] We clicked on a File\n")
+	}
 } // func (w *RWin) handleFileListClick(view *gtk.TreeView, evt *gdk.Event)

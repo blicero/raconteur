@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-06-03 19:57:52 krylon>
+# Time-stamp: <2022-06-04 22:51:21 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -18,16 +18,16 @@ yet how that would factor in.
 * Clock
   Here I keep track of the time I waste on this futile effort.
   #+BEGIN: clocktable :scope file :maxlevel 202 :emphasize t
-  #+CAPTION: Clock summary at [2022-06-03 Fr 19:57]
+  #+CAPTION: Clock summary at [2022-06-04 Sa 22:51]
   | Headline         | Time    |        |
   |------------------+---------+--------|
-  | *Total time*     | *12:54* |        |
+  | *Total time*     | *17:46* |        |
   |------------------+---------+--------|
-  | *Moving parts*   | *12:54* |        |
+  | *Moving parts*   | *17:46* |        |
   | \_  /Data types/ |         | /2:40/ |
   | \_  /Database/   |         | /6:31/ |
   | \_  /Scanner/    |         | /1:50/ |
-  | \_  /GUI/        |         | /1:53/ |
+  | \_  /GUI/        |         | /6:45/ |
   #+END:
 
 * Moving parts
@@ -52,6 +52,7 @@ yet how that would factor in.
    Scanner walks directory trees looking for audio files. Roughly speaking.
 ** GUI
    :LOGBOOK:
+   CLOCK: [2022-06-04 Sa 17:59]--[2022-06-04 Sa 22:51] =>  4:52
    CLOCK: [2022-06-03 Fr 18:04]--[2022-06-03 Fr 19:57] =>  1:53
    :END:
    Like I said, we're going to use gotk3, the Go bindings to Gtk3. I think

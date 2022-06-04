@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-03 10:38:36 krylon>
+// Time-stamp: <2022-06-04 16:43:53 krylon>
 
 // Package scanner implements processing directory trees looking for files that,
 // allegedly, are podcast episodes, audio books, or parts of audio books.
@@ -13,9 +13,11 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sync"
 
+	"github.com/blicero/krylib"
 	"github.com/blicero/raconteur/common"
 	"github.com/blicero/raconteur/db"
 	"github.com/blicero/raconteur/logdomain"
@@ -33,6 +35,7 @@ type Walker struct {
 	log   *log.Logger
 	lock  sync.Mutex
 	db    *db.Database
+	root  string
 	Files chan *objects.File
 }
 
@@ -63,6 +66,9 @@ func (w *Walker) Walk(root string) error {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 
+	w.root = root
+	defer func() { w.root = "" }()
+
 	return fs.WalkDir(os.DirFS(root), ".", w.visit)
 } // func (w *Walker) Walk(root string) error
 
@@ -79,25 +85,31 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 	}
 
 	var (
-		info fs.FileInfo
-		err  error
-		f    *objects.File
+		info     fs.FileInfo
+		err      error
+		f        *objects.File
+		fullPath = filepath.Join(w.root, path)
 	)
+
+	w.log.Printf("[DEBUG] Process %s\n", fullPath)
 
 	if !suffixPattern.MatchString(path) {
 		return nil
 	} else if info, err = d.Info(); err != nil {
 		return err
 	} else if info.Size() < minSize {
+		w.log.Printf("[DEBUG] %s is too small (%s)\n",
+			fullPath,
+			krylib.FmtBytes(info.Size()))
 		return nil
-	} else if f, err = w.db.FileGetByPath(path); err != nil {
+	} else if f, err = w.db.FileGetByPath(fullPath); err != nil {
 		w.log.Printf("[ERROR] Failed to look up file %s: %s\n",
-			path,
+			fullPath,
 			err.Error())
 		return nil
 	} else if f == nil {
 		f = &objects.File{
-			Path: path,
+			Path: fullPath,
 		}
 
 		if err = w.db.FileAdd(f); err != nil {

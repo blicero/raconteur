@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-03 23:06:33 krylon>
+// Time-stamp: <2022-06-04 18:01:33 krylon>
 
 package ui
 
@@ -19,6 +19,7 @@ import (
 	"github.com/blicero/raconteur/logdomain"
 	"github.com/blicero/raconteur/objects"
 	"github.com/blicero/raconteur/scanner"
+	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 )
@@ -227,6 +228,8 @@ func Create() (*RWin, error) {
 
 	win.win.Connect("destroy", gtk.MainQuit)
 
+	win.view.Connect("button-press-event", win.handleFileListClick)
+
 	win.ticker = time.NewTicker(ckFileInterval)
 	glib.IdleAdd(win.ckFileQueue)
 
@@ -300,6 +303,7 @@ func (w *RWin) initializeTree() error {
 				continue
 			}
 
+			w.store.SetValue(fiter, 0, -f.ProgramID)
 			w.store.SetValue(fiter, 2, f.ID)
 			w.store.SetValue(fiter, 3, f.DisplayTitle())
 			w.store.SetValue(fiter, 4, 0)
@@ -335,6 +339,7 @@ func (w *RWin) initializeTree() error {
 			continue
 		}
 
+		w.store.SetValue(fiter, 0, -1)
 		w.store.SetValue(fiter, 2, f.ID)
 		w.store.SetValue(fiter, 3, f.DisplayTitle())
 		w.store.SetValue(fiter, 4, 0)
@@ -665,6 +670,7 @@ func (w *RWin) ckFileQueue() bool {
 
 		fiter = w.store.Append(piter)
 
+		w.store.SetValue(fiter, 0, -1)
 		w.store.SetValue(fiter, 2, f.ID)
 		w.store.SetValue(fiter, 3, f.DisplayTitle())
 		w.store.SetValue(fiter, 4, 0)
@@ -673,3 +679,112 @@ func (w *RWin) ckFileQueue() bool {
 
 	return true
 } // func (w *RWin) ckFileQueue()
+
+func (w *RWin) handleFileListClick(view *gtk.TreeView, evt *gdk.Event) {
+	krylib.Trace()
+	defer w.log.Printf("[TRACE] EXIT %s\n",
+		krylib.TraceInfo())
+	var be = gdk.EventButtonNewFromEvent(evt)
+
+	if be.Button() != gdk.BUTTON_SECONDARY {
+		return
+	}
+
+	var (
+		err    error
+		exists bool
+		x, y   float64
+		path   *gtk.TreePath
+		col    *gtk.TreeViewColumn
+		model  *gtk.TreeModel
+		imodel gtk.ITreeModel
+		iter   *gtk.TreeIter
+	)
+
+	x = be.X()
+	y = be.Y()
+
+	path, col, _, _, exists = view.GetPathAtPos(int(x), int(y))
+
+	if !exists {
+		w.log.Printf("[DEBUG] There is no item at %f/%f\n",
+			x,
+			y)
+		return
+	}
+
+	w.log.Printf("[DEBUG] Handle Click at %f/%f -> Path %s\n",
+		x,
+		y,
+		path)
+
+	if imodel, err = view.GetModel(); err != nil {
+		w.log.Printf("[ERROR] Cannot get Model from View: %s\n",
+			err.Error())
+		return
+	}
+
+	model = imodel.ToTreeModel()
+
+	if iter, err = model.GetIter(path); err != nil {
+		w.log.Printf("[ERROR] Cannot get Iter from TreePath %s: %s\n",
+			path,
+			err.Error())
+		return
+	}
+
+	var title string = col.GetTitle()
+	w.log.Printf("[DEBUG] Column %s was clicked\n",
+		title)
+
+	var (
+		val      *glib.Value
+		gv       interface{}
+		pid, fid int64
+	)
+
+	if val, err = model.GetValue(iter, 0); err != nil {
+		w.log.Printf("[ERROR] Cannot get value for column 0: %s\n",
+			err.Error())
+		return
+	} else if gv, err = val.GoValue(); err != nil {
+		w.log.Printf("[ERROR] Cannot get Go value from GLib value: %s\n",
+			err.Error())
+	}
+
+	switch v := gv.(type) {
+	case int:
+		pid = int64(v)
+	case int64:
+		pid = v
+	default:
+		w.log.Printf("[ERROR] Unexpected type for ID column: %T\n",
+			v)
+		return
+	}
+
+	if val, err = model.GetValue(iter, 2); err != nil {
+		w.log.Printf("[ERROR] Cannot get value for column 2: %s\n",
+			err.Error())
+		return
+	} else if gv, err = val.GoValue(); err != nil {
+		w.log.Printf("[ERROR] Cannot get value from GLib value: %s\n",
+			err.Error())
+		return
+	}
+
+	switch v := gv.(type) {
+	case int:
+		fid = int64(v)
+	case int64:
+		fid = v
+	default:
+		w.log.Printf("[ERROR] Unexpected type for ID column: %T\n",
+			v)
+		return
+	}
+
+	w.log.Printf("[DEBUG] PID of clicked-on row is %d, FID is %d\n",
+		pid,
+		fid)
+} // func (w *RWin) handleFileListClick(view *gtk.TreeView, evt *gdk.Event)

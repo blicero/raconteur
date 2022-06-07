@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-07 19:33:59 krylon>
+// Time-stamp: <2022-06-07 22:11:40 krylon>
 
 package ui
 
@@ -839,7 +839,7 @@ func (w *RWin) mkContextMenuProgram(iter *gtk.TreeIter, pid int64) (*gtk.Menu, e
 		return nil, err
 	}
 
-	editItem.Connect("activate", func() { w.editProgram(p) })
+	editItem.Connect("activate", func() { w.editProgram(p, iter) })
 	playItem.Connect("activate", func() { w.playProgram(p) })
 
 	menu.Append(editItem)
@@ -848,7 +848,7 @@ func (w *RWin) mkContextMenuProgram(iter *gtk.TreeIter, pid int64) (*gtk.Menu, e
 	return menu, nil
 } // func (w *RWin) mkContextMenuProgram(iter *gtk.TreeIter, pid int64) (*gtk.Menu, error)
 
-func (w *RWin) editProgram(p *objects.Program) {
+func (w *RWin) editProgram(p *objects.Program, iter *gtk.TreeIter) {
 	var (
 		err                    error
 		dlg                    *gtk.Dialog
@@ -957,28 +957,79 @@ func (w *RWin) editProgram(p *objects.Program) {
 
 	var (
 		ttl, uri, creator string
+		c                 *db.Database
 	)
 
 	ttl, _ = titleE.GetText()
 	uri, _ = urlE.GetText()
 	creator, _ = creatorE.GetText()
 
+	c = w.pool.Get()
+	defer w.pool.Put(c)
+
+	var txStatus = true
+
+	if err = c.Begin(); err != nil {
+		w.log.Printf("[ERROR] Cannot initiate transaction: %s\n",
+			err.Error())
+		return
+	}
+
 	if ttl != p.Title {
 		w.log.Printf("[DEBUG] Title: %q -> %q\n",
 			p.Title,
 			ttl)
+		if err = c.ProgramSetTitle(p, ttl); err != nil {
+			w.log.Printf("[ERROR] Cannot update title: %s\n",
+				err.Error())
+			txStatus = false
+			goto FINISH
+		} else {
+			w.store.SetValue(iter, 1, ttl)
+		}
 	}
 
 	if uri != p.URLString() {
 		w.log.Printf("[DEBUG] URL: %q -> %q\n",
 			p.URLString(),
 			uri)
+		var u *url.URL
+
+		if u, err = url.Parse(uri); err != nil {
+			w.log.Printf("[ERROR] Invalid URL %q: %s\n",
+				uri,
+				err.Error())
+		} else if c.ProgramSetURL(p, u); err != nil {
+			w.log.Printf("[ERROR] Cannot update URL for Program %q: %s\n",
+				p.Title,
+				err.Error())
+			txStatus = false
+			goto FINISH
+		}
 	}
 
 	if creator != p.Creator {
 		w.log.Printf("[DEBUG] Creator: %q -> %q\n",
 			p.Creator,
 			creator)
+		if err = c.ProgramSetCreator(p, creator); err != nil {
+			w.log.Printf("[ERROR] Cannot update Creator for Program %q: %s\n",
+				p.Title,
+				err.Error())
+			txStatus = false
+			goto FINISH
+		}
+	}
+
+FINISH:
+	if txStatus {
+		if err = c.Commit(); err != nil {
+			w.log.Printf("[ERROR] Cannot commit transaction: %s\n",
+				err.Error())
+		}
+	} else if err = c.Rollback(); err != nil {
+		w.log.Printf("[ERROR] Cannot rollback transaction: %s\n",
+			err.Error())
 	}
 } // func (w *RWin) editProgram(p *objects.Program)
 

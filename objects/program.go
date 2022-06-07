@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-03 20:22:55 krylon>
+// Time-stamp: <2022-06-07 19:27:09 krylon>
 
 package objects
 
@@ -17,3 +17,12 @@ type Program struct {
 	Creator string
 	URL     *url.URL
 }
+
+// URLString returns the Program's associated URL as a string.
+func (p *Program) URLString() string {
+	if p.URL != nil {
+		return p.URL.String()
+	}
+
+	return ""
+} // func (p *Program) URLString() string

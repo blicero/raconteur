@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-04 21:21:11 krylon>
+// Time-stamp: <2022-06-07 19:33:59 krylon>
 
 package ui
 
@@ -671,7 +671,7 @@ func (w *RWin) ckFileQueue() bool {
 
 		fiter = w.store.Append(piter)
 
-		w.store.SetValue(fiter, 0, -1)
+		w.store.SetValue(fiter, 0, math.MinInt32)
 		w.store.SetValue(fiter, 2, f.ID)
 		w.store.SetValue(fiter, 3, f.DisplayTitle())
 		w.store.SetValue(fiter, 4, 0)
@@ -789,10 +789,199 @@ func (w *RWin) handleFileListClick(view *gtk.TreeView, evt *gdk.Event) {
 		pid,
 		fid)
 
+	var menu *gtk.Menu
+
 	// First of all, we need to figure out if we clicked on a Program or a File.
 	if pid >= 0 {
 		w.log.Printf("[DEBUG] We clicked on a Program\n")
+		if menu, err = w.mkContextMenuProgram(iter, pid); err != nil {
+			w.log.Printf("[ERROR] Cannot create context menu: %s\n",
+				err.Error())
+			return
+		}
 	} else {
 		w.log.Printf("[DEBUG] We clicked on a File\n")
+		return
 	}
+
+	menu.ShowAll()
+	menu.PopupAtPointer(evt)
 } // func (w *RWin) handleFileListClick(view *gtk.TreeView, evt *gdk.Event)
+
+func (w *RWin) mkContextMenuProgram(iter *gtk.TreeIter, pid int64) (*gtk.Menu, error) {
+	var (
+		err                error
+		editItem, playItem *gtk.MenuItem
+		menu               *gtk.Menu
+		c                  *db.Database
+		p                  *objects.Program
+	)
+
+	c = w.pool.Get()
+	defer w.pool.Put(c)
+
+	if p, err = c.ProgramGetByID(pid); err != nil {
+		w.log.Printf("[ERROR] Cannot load Program %d: %s\n",
+			pid,
+			err.Error())
+		return nil, err
+	} else if menu, err = gtk.MenuNew(); err != nil {
+		w.log.Printf("[ERROR] Cannot create Menu: %s\n",
+			err.Error())
+		return nil, err
+	} else if editItem, err = gtk.MenuItemNewWithMnemonic("_Edit"); err != nil {
+		w.log.Printf("[ERROR] Cannot create MenuItem \"Edit\": %s\n",
+			err.Error())
+		return nil, err
+	} else if playItem, err = gtk.MenuItemNewWithMnemonic("_Play"); err != nil {
+		w.log.Printf("[ERROR] Cannot create MenuItem \"Play\": %s\n",
+			err.Error())
+		return nil, err
+	}
+
+	editItem.Connect("activate", func() { w.editProgram(p) })
+	playItem.Connect("activate", func() { w.playProgram(p) })
+
+	menu.Append(editItem)
+	menu.Append(playItem)
+
+	return menu, nil
+} // func (w *RWin) mkContextMenuProgram(iter *gtk.TreeIter, pid int64) (*gtk.Menu, error)
+
+func (w *RWin) editProgram(p *objects.Program) {
+	var (
+		err                    error
+		dlg                    *gtk.Dialog
+		dbox                   *gtk.Box
+		grid                   *gtk.Grid
+		titleE, creatorE, urlE *gtk.Entry
+		titleL, creatorL, urlL *gtk.Label
+	)
+
+	if dlg, err = gtk.DialogNewWithButtons(
+		"Edit Program",
+		w.win,
+		gtk.DIALOG_MODAL,
+		[]any{
+			"_Cancel",
+			gtk.RESPONSE_CANCEL,
+			"_OK",
+			gtk.RESPONSE_OK,
+		},
+	); err != nil {
+		w.log.Printf("[ERROR] Cannot create dialog for editing  Program %s: %s\n",
+			p.Title,
+			err.Error())
+		return
+	}
+
+	defer dlg.Close()
+
+	if _, err = dlg.AddButton("OK", gtk.RESPONSE_OK); err != nil {
+		w.log.Printf("[ERROR] Cannot add OK button to AddProgram Dialog: %s\n",
+			err.Error())
+		return
+	} else if grid, err = gtk.GridNew(); err != nil {
+		w.log.Printf("[ERROR] Cannot create gtk.Grid for AddPerson Dialog: %s\n",
+			err.Error())
+		return
+	} else if urlL, err = gtk.LabelNew("URL:"); err != nil {
+		w.log.Printf("[ERROR] Cannot create URL Label: %s\n",
+			err.Error())
+		return
+	} else if titleL, err = gtk.LabelNew("Title:"); err != nil {
+		w.log.Printf("[ERROR] Cannot create Title Label: %s\n",
+			err.Error())
+		return
+	} else if creatorL, err = gtk.LabelNew("Creator:"); err != nil {
+		w.log.Printf("[ERROR] Cannot create Creator Label: %s\n",
+			err.Error())
+		return
+	} else if urlE, err = gtk.EntryNew(); err != nil {
+		w.log.Printf("[ERROR] Cannot create URL Entry: %s\n",
+			err.Error())
+		return
+	} else if titleE, err = gtk.EntryNew(); err != nil {
+		w.log.Printf("[ERROR] Cannot create Title Entry: %s\n",
+			err.Error())
+		return
+	} else if creatorE, err = gtk.EntryNew(); err != nil {
+		w.log.Printf("[ERROR] Cannot create Creator Entry: %s\n",
+			err.Error())
+		return
+	} else if dbox, err = dlg.GetContentArea(); err != nil {
+		w.log.Printf("[ERROR] Cannot get ContentArea of AddPerson Dialog: %s\n",
+			err.Error())
+		return
+	}
+
+	grid.InsertColumn(0)
+	grid.InsertColumn(1)
+	grid.InsertRow(0)
+	grid.InsertRow(1)
+	grid.InsertRow(2)
+
+	grid.Attach(titleL, 0, 0, 1, 1)
+	grid.Attach(urlL, 0, 1, 1, 1)
+	grid.Attach(creatorL, 0, 2, 1, 1)
+	grid.Attach(titleE, 1, 0, 1, 1)
+	grid.Attach(urlE, 1, 1, 1, 1)
+	grid.Attach(creatorE, 1, 2, 1, 1)
+
+	titleE.SetText(p.Title)
+	urlE.SetText(p.URLString())
+	creatorE.SetText(p.Creator)
+
+	dbox.PackStart(grid, true, true, 0)
+	dlg.ShowAll()
+
+	var res = dlg.Run()
+
+	switch res {
+	case gtk.RESPONSE_NONE:
+		fallthrough
+	case gtk.RESPONSE_DELETE_EVENT:
+		fallthrough
+	case gtk.RESPONSE_CLOSE:
+		fallthrough
+	case gtk.RESPONSE_CANCEL:
+		w.log.Println("[DEBUG] User changed their mind about adding a Program. Fine with me.")
+		return
+	case gtk.RESPONSE_OK:
+		// 's ist los, Hund?
+	default:
+		w.log.Printf("[CANTHAPPEN] Well, I did NOT see this coming: %d\n",
+			res)
+		return
+	}
+
+	var (
+		ttl, uri, creator string
+	)
+
+	ttl, _ = titleE.GetText()
+	uri, _ = urlE.GetText()
+	creator, _ = creatorE.GetText()
+
+	if ttl != p.Title {
+		w.log.Printf("[DEBUG] Title: %q -> %q\n",
+			p.Title,
+			ttl)
+	}
+
+	if uri != p.URLString() {
+		w.log.Printf("[DEBUG] URL: %q -> %q\n",
+			p.URLString(),
+			uri)
+	}
+
+	if creator != p.Creator {
+		w.log.Printf("[DEBUG] Creator: %q -> %q\n",
+			p.Creator,
+			creator)
+	}
+} // func (w *RWin) editProgram(p *objects.Program)
+
+func (w *RWin) playProgram(p *objects.Program) {
+	w.displayMsg(fmt.Sprintf("Play Program %q - IMPLEMENTME!!!", p.Title))
+} // func (w *RWin) playProgram(p *objects.Program)

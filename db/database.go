@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 08. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-03 19:39:41 krylon>
+// Time-stamp: <2022-06-07 21:11:35 krylon>
 
 // Package db provides a wrapper around the actual database connection.
 package db
@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"regexp"
 	"sync"
@@ -697,6 +698,221 @@ EXEC_QUERY:
 	return nil
 } // func (db *Database) ProgramDel(p *objects.Program) error
 
+// ProgramSetTitle updates a Program's title.
+func (db *Database) ProgramSetTitle(p *objects.Program, t string) error {
+	const qid query.ID = query.ProgramSetTitle
+	var (
+		err    error
+		msg    string
+		stmt   *sql.Stmt
+		tx     *sql.Tx
+		status bool
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid.String(),
+			err.Error())
+		return err
+	} else if db.tx != nil {
+		tx = db.tx
+	} else {
+	BEGIN_AD_HOC:
+		if tx, err = db.db.Begin(); err != nil {
+			if worthARetry(err) {
+				waitForRetry()
+				goto BEGIN_AD_HOC
+			} else {
+				msg = fmt.Sprintf("Error starting transaction: %s\n",
+					err.Error())
+				db.log.Printf("[ERROR] %s\n", msg)
+				return errors.New(msg)
+			}
+
+		} else {
+			defer func() {
+				var err2 error
+				if status {
+					if err2 = tx.Commit(); err2 != nil {
+						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
+							err2.Error())
+					}
+				} else if err2 = tx.Rollback(); err2 != nil {
+					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
+						err2.Error())
+				}
+			}()
+		}
+	}
+
+	stmt = tx.Stmt(stmt)
+
+EXEC_QUERY:
+	if _, err = stmt.Exec(t, p.ID); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		} else {
+			err = fmt.Errorf("Cannot set title for Program %q to %q: %s\n",
+				p.Title,
+				t,
+				err.Error())
+			db.log.Printf("[ERROR] %s\n", err.Error())
+			return err
+		}
+	}
+
+	status = true
+	p.Title = t
+	return nil
+} // func (db *Database) ProgramSetTitle(p *objects.Program, t string) error
+
+// ProgramSetCreator updates the Program's Creator.
+func (db *Database) ProgramSetCreator(p *objects.Program, c string) error {
+	const qid query.ID = query.ProgramSetCreator
+	var (
+		err    error
+		msg    string
+		stmt   *sql.Stmt
+		tx     *sql.Tx
+		status bool
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid.String(),
+			err.Error())
+		return err
+	} else if db.tx != nil {
+		tx = db.tx
+	} else {
+	BEGIN_AD_HOC:
+		if tx, err = db.db.Begin(); err != nil {
+			if worthARetry(err) {
+				waitForRetry()
+				goto BEGIN_AD_HOC
+			} else {
+				msg = fmt.Sprintf("Error starting transaction: %s\n",
+					err.Error())
+				db.log.Printf("[ERROR] %s\n", msg)
+				return errors.New(msg)
+			}
+
+		} else {
+			defer func() {
+				var err2 error
+				if status {
+					if err2 = tx.Commit(); err2 != nil {
+						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
+							err2.Error())
+					}
+				} else if err2 = tx.Rollback(); err2 != nil {
+					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
+						err2.Error())
+				}
+			}()
+		}
+	}
+
+	stmt = tx.Stmt(stmt)
+
+EXEC_QUERY:
+	if _, err = stmt.Exec(c, p.ID); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		} else {
+			err = fmt.Errorf("Cannot set Creator for Program %q to %q: %s\n",
+				p.Title,
+				c,
+				err.Error())
+			db.log.Printf("[ERROR] %s\n", err.Error())
+			return err
+		}
+	}
+
+	status = true
+	p.Creator = c
+	return nil
+} // func (db *Database) ProgramSetCreator(p *objects.Program, c string) error
+
+// ProgramSetURL updates the Program's Creator.
+func (db *Database) ProgramSetURL(p *objects.Program, u *url.URL) error {
+	const qid query.ID = query.ProgramSetURL
+	var (
+		err    error
+		msg    string
+		stmt   *sql.Stmt
+		tx     *sql.Tx
+		status bool
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid.String(),
+			err.Error())
+		return err
+	} else if db.tx != nil {
+		tx = db.tx
+	} else {
+	BEGIN_AD_HOC:
+		if tx, err = db.db.Begin(); err != nil {
+			if worthARetry(err) {
+				waitForRetry()
+				goto BEGIN_AD_HOC
+			} else {
+				msg = fmt.Sprintf("Error starting transaction: %s\n",
+					err.Error())
+				db.log.Printf("[ERROR] %s\n", msg)
+				return errors.New(msg)
+			}
+
+		} else {
+			defer func() {
+				var err2 error
+				if status {
+					if err2 = tx.Commit(); err2 != nil {
+						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
+							err2.Error())
+					}
+				} else if err2 = tx.Rollback(); err2 != nil {
+					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
+						err2.Error())
+				}
+			}()
+		}
+	}
+
+	stmt = tx.Stmt(stmt)
+
+	var s string
+
+	if u == nil {
+		s = ""
+	} else {
+		s = u.String()
+	}
+
+EXEC_QUERY:
+	if _, err = stmt.Exec(s, p.ID); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		} else {
+			err = fmt.Errorf("Cannot update URL for Program %q to %q: %s\n",
+				p.Title,
+				s,
+				err.Error())
+			db.log.Printf("[ERROR] %s\n", err.Error())
+			return err
+		}
+	}
+
+	status = true
+	p.URL = u
+	return nil
+} // func (db *Database) ProgramSetURL(p *objects.Program, u *url.URL) error
+
 // ProgramGetByID loads a Program by its Database ID.
 func (db *Database) ProgramGetByID(id int64) (*objects.Program, error) {
 	const qid query.ID = query.ProgramGetByID
@@ -729,10 +945,18 @@ EXEC_QUERY:
 	defer rows.Close() // nolint: errcheck,gosec
 
 	if rows.Next() {
-		var p = &objects.Program{ID: id}
+		var (
+			u string
+			p = &objects.Program{ID: id}
+		)
 
-		if err = rows.Scan(&p.Title, &p.Creator); err != nil {
+		if err = rows.Scan(&p.Title, &p.Creator, &u); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
+			return nil, err
+		} else if p.URL, err = url.Parse(u); err != nil {
+			db.log.Printf("[ERROR] Cannot parse URL %q: %s\n",
+				u,
+				err.Error())
 			return nil, err
 		}
 
@@ -775,10 +999,18 @@ EXEC_QUERY:
 	var programs = make([]objects.Program, 0)
 
 	for rows.Next() {
-		var p objects.Program
+		var (
+			u string
+			p objects.Program
+		)
 
-		if err = rows.Scan(&p.ID, &p.Title, &p.Creator); err != nil {
+		if err = rows.Scan(&p.ID, &p.Title, &p.Creator, &u); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
+			return nil, err
+		} else if p.URL, err = url.Parse(u); err != nil {
+			db.log.Printf("[ERROR] Cannot parse URL %q: %s\n",
+				u,
+				err.Error())
 			return nil, err
 		}
 

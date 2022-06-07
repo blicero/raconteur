@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-02 19:22:20 krylon>
+// Time-stamp: <2022-06-07 19:38:19 krylon>
 
 // Package query provides symbolic constants to identify SQL queries.
 package query
@@ -17,6 +17,9 @@ const (
 	ProgramGetAll
 	ProgramGetByID
 	ProgramGetByTitle
+	ProgramSetTitle
+	ProgramSetURL
+	ProgramSetCreator
 	FileAdd
 	FileDel
 	FileGetByID

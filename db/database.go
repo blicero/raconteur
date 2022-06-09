@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 08. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-07 21:11:35 krylon>
+// Time-stamp: <2022-06-09 17:27:44 krylon>
 
 // Package db provides a wrapper around the actual database connection.
 package db
@@ -1569,16 +1569,28 @@ func (db *Database) FileSetProgram(f *objects.File, p *objects.Program) error {
 
 	stmt = tx.Stmt(stmt)
 
+	var pid *int64
+
+	if p != nil {
+		pid = &p.ID
+	}
+
 EXEC_QUERY:
-	if _, err = stmt.Exec(p.ID, f.ID); err != nil {
+	if _, err = stmt.Exec(pid, f.ID); err != nil {
 		if worthARetry(err) {
 			waitForRetry()
 			goto EXEC_QUERY
 		} else {
+			var pTitle string
+			if p != nil {
+				pTitle = p.Title
+			} else {
+				pTitle = "(NULL)"
+			}
 			err = fmt.Errorf("Cannot set Program of File %q (%d) to %s: %s",
 				f.DisplayTitle(),
 				f.ID,
-				p.Title,
+				pTitle,
 				err.Error())
 			db.log.Printf("[ERROR] %s\n", err.Error())
 			return err
@@ -1586,6 +1598,10 @@ EXEC_QUERY:
 	}
 
 	status = true
-	f.ProgramID = p.ID
+	if p != nil {
+		f.ProgramID = p.ID
+	} else {
+		f.ProgramID = 0
+	}
 	return nil
 } // func (db *Database) FileSetProgram(f *objects.File, p *objects.Program) error

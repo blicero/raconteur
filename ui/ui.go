@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-08 21:22:58 krylon>
+// Time-stamp: <2022-06-09 19:44:01 krylon>
 
 package ui
 
@@ -329,6 +329,7 @@ func (w *RWin) initializeTree() error {
 	}
 
 	piter = w.store.Prepend(nil)
+	w.progs[0] = piter
 	w.store.SetValue(piter, 0, 0)
 	w.store.SetValue(piter, 1, "---")
 
@@ -869,6 +870,8 @@ func (w *RWin) mkContextMenuFile(iter *gtk.TreeIter, fid int64) (*gtk.Menu, erro
 		progs              []objects.Program
 	)
 
+	krylib.Trace()
+
 	c = w.pool.Get()
 	defer w.pool.Put(c)
 
@@ -919,11 +922,17 @@ func (w *RWin) mkContextMenuFile(iter *gtk.TreeIter, fid int64) (*gtk.Menu, erro
 		return nil, err
 	}
 
-	progMenu.Append(pitem)
-	if f.ProgramID == 0 {
-		pitem.SetActive(true)
+	type itemProg struct {
+		item *gtk.RadioMenuItem
+		prog *objects.Program
 	}
-	progMenu.Connect("activate", func() { w.fileSetProgram(iter, f, nil) })
+	var pItems = make(map[int64]itemProg, len(progs)+1)
+	pItems[0] = itemProg{item: pitem, prog: nil}
+
+	progMenu.Append(pitem)
+	// if f.ProgramID == 0 {
+	// 	pitem.SetActive(true)
+	// }
 
 	for _, p := range progs {
 		if pitem, err = gtk.RadioMenuItemNewWithLabel(group, p.Title); err != nil {
@@ -931,19 +940,31 @@ func (w *RWin) mkContextMenuFile(iter *gtk.TreeIter, fid int64) (*gtk.Menu, erro
 				p.Title,
 				err.Error())
 			return nil, err
-			/* } else if group, err = pitem.GetGroup(); err != nil {
-			w.log.Printf("[ERROR] Cannot get Group for RadioMenuItem: %s\n",
-				err.Error())
-			return nil, err */
 		}
+
+		w.log.Printf("[TRACE] Create menu item for Program %d (%q)\n",
+			p.ID,
+			p.Title)
 
 		progMenu.Append(pitem)
-		pitem.Connect("activate", func() { w.fileSetProgram(iter, f, &p) })
+		pItems[p.ID] = itemProg{item: pitem, prog: p.Clone()}
+	}
 
-		if f.ProgramID == p.ID {
+	for _, item := range pItems {
+		var pid int64
+
+		if item.prog != nil {
+			pid = item.prog.ID
+		}
+
+		if f.ProgramID == pid {
 			pitem.SetActive(true)
 		}
+
+		item.item.Connect("activate", func() { w.fileSetProgram(iter, f, item.prog) })
 	}
+
+	krylib.Trace()
 
 	return menu, nil
 } // func (w *RWin) mkContextMenuFile(iter *gtk.TreeIter, fid int64) (*gtk.Menu, error)
@@ -955,7 +976,21 @@ func (w *RWin) fileSetProgram(iter *gtk.TreeIter, f *objects.File, p *objects.Pr
 		fiter, piter *gtk.TreeIter
 		dstr         string
 		dur          time.Duration
+		pid          int64
 	)
+
+	if p != nil {
+		pid = p.ID
+	}
+
+	if f.ProgramID == pid {
+		return
+	}
+
+	krylib.Trace()
+	w.log.Printf("[DEBUG] Set Program for File %d to %d\n",
+		f.ID,
+		pid)
 
 	c = w.pool.Get()
 	defer w.pool.Put(c)
@@ -968,7 +1003,7 @@ func (w *RWin) fileSetProgram(iter *gtk.TreeIter, f *objects.File, p *objects.Pr
 		return
 	}
 
-	piter = w.progs[p.ID]
+	piter = w.progs[pid]
 
 	fiter = w.store.Append(piter)
 
@@ -981,7 +1016,11 @@ func (w *RWin) fileSetProgram(iter *gtk.TreeIter, f *objects.File, p *objects.Pr
 		dstr = dur.String()
 	}
 
-	w.store.SetValue(fiter, 0, math.MinInt32)
+	if pid == 0 {
+		pid = math.MinInt32
+	}
+
+	w.store.SetValue(fiter, 0, pid)
 	w.store.SetValue(fiter, 2, f.ID)
 	w.store.SetValue(fiter, 3, f.DisplayTitle())
 	w.store.SetValue(fiter, 4, 0)

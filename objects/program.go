@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-07 19:27:09 krylon>
+// Time-stamp: <2022-06-09 19:14:33 krylon>
 
 package objects
 
@@ -26,3 +26,12 @@ func (p *Program) URLString() string {
 
 	return ""
 } // func (p *Program) URLString() string
+
+func (p *Program) Clone() *Program {
+	return &Program{
+		ID:      p.ID,
+		Title:   p.Title,
+		Creator: p.Creator,
+		URL:     p.URL,
+	}
+} // func (p *Program) Clone() *Program

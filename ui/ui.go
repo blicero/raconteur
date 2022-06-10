@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-10 16:08:22 krylon>
+// Time-stamp: <2022-06-10 16:34:29 krylon>
 
 package ui
 
@@ -870,8 +870,6 @@ func (w *RWin) mkContextMenuFile(iter *gtk.TreeIter, fid int64) (*gtk.Menu, erro
 		progs              []objects.Program
 	)
 
-	krylib.Trace()
-
 	c = w.pool.Get()
 	defer w.pool.Put(c)
 
@@ -940,8 +938,6 @@ func (w *RWin) mkContextMenuFile(iter *gtk.TreeIter, fid int64) (*gtk.Menu, erro
 		progMenu.Append(pitem)
 	}
 
-	krylib.Trace()
-
 	return menu, nil
 } // func (w *RWin) mkContextMenuFile(iter *gtk.TreeIter, fid int64) (*gtk.Menu, error)
 
@@ -958,11 +954,6 @@ func (w *RWin) fileSetProgram(iter *gtk.TreeIter, f *objects.File, p *objects.Pr
 	if p != nil {
 		pid = p.ID
 	}
-
-	krylib.Trace()
-	w.log.Printf("[DEBUG] Set Program for File %d to %d\n",
-		f.ID,
-		pid)
 
 	if f.ProgramID == pid {
 		w.log.Printf("[DEBUG] ProgramID of File %d (%d) is not changed.\n",

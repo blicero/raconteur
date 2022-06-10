@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-09 19:44:01 krylon>
+// Time-stamp: <2022-06-10 16:08:22 krylon>
 
 package ui
 
@@ -908,34 +908,21 @@ func (w *RWin) mkContextMenuFile(iter *gtk.TreeIter, fid int64) (*gtk.Menu, erro
 	progItem.SetSubmenu(progMenu)
 
 	var (
-		pitem *gtk.RadioMenuItem
-		group *glib.SList
+		pitem *gtk.CheckMenuItem
 	)
 
-	if pitem, err = gtk.RadioMenuItemNewWithLabel(group, "---"); err != nil {
-		w.log.Printf("[ERROR] Cannot create RadioMenuItem: %s\n",
-			err.Error())
-		return nil, err
-	} else if group, err = pitem.GetGroup(); err != nil {
-		w.log.Printf("[ERROR] Cannot get group from RadioMenuItem: %s\n",
+	if pitem, err = gtk.CheckMenuItemNewWithLabel("(NULL)"); err != nil {
+		w.log.Printf("[ERROR] Cannot create CheckMenuItem: %s\n",
 			err.Error())
 		return nil, err
 	}
 
-	type itemProg struct {
-		item *gtk.RadioMenuItem
-		prog *objects.Program
-	}
-	var pItems = make(map[int64]itemProg, len(progs)+1)
-	pItems[0] = itemProg{item: pitem, prog: nil}
-
+	pitem.SetActive(f.ProgramID == 0)
+	pitem.Connect("activate", func() { w.fileSetProgram(iter, f, nil) })
 	progMenu.Append(pitem)
-	// if f.ProgramID == 0 {
-	// 	pitem.SetActive(true)
-	// }
 
 	for _, p := range progs {
-		if pitem, err = gtk.RadioMenuItemNewWithLabel(group, p.Title); err != nil {
+		if pitem, err = gtk.CheckMenuItemNewWithLabel(p.Title); err != nil {
 			w.log.Printf("[ERROR] Cannot create RadioMenuItem for Program %q: %s\n",
 				p.Title,
 				err.Error())
@@ -946,22 +933,11 @@ func (w *RWin) mkContextMenuFile(iter *gtk.TreeIter, fid int64) (*gtk.Menu, erro
 			p.ID,
 			p.Title)
 
+		var pParm = p.Clone()
+
+		pitem.SetActive(p.ID == f.ProgramID)
+		pitem.Connect("activate", func() { w.fileSetProgram(iter, f, pParm) })
 		progMenu.Append(pitem)
-		pItems[p.ID] = itemProg{item: pitem, prog: p.Clone()}
-	}
-
-	for _, item := range pItems {
-		var pid int64
-
-		if item.prog != nil {
-			pid = item.prog.ID
-		}
-
-		if f.ProgramID == pid {
-			pitem.SetActive(true)
-		}
-
-		item.item.Connect("activate", func() { w.fileSetProgram(iter, f, item.prog) })
 	}
 
 	krylib.Trace()
@@ -983,14 +959,17 @@ func (w *RWin) fileSetProgram(iter *gtk.TreeIter, f *objects.File, p *objects.Pr
 		pid = p.ID
 	}
 
-	if f.ProgramID == pid {
-		return
-	}
-
 	krylib.Trace()
 	w.log.Printf("[DEBUG] Set Program for File %d to %d\n",
 		f.ID,
 		pid)
+
+	if f.ProgramID == pid {
+		w.log.Printf("[DEBUG] ProgramID of File %d (%d) is not changed.\n",
+			f.ID,
+			pid)
+		return
+	}
 
 	c = w.pool.Get()
 	defer w.pool.Put(c)

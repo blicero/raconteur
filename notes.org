@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-06-08 21:33:31 krylon>
+# Time-stamp: <2022-06-10 16:10:38 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -18,16 +18,16 @@ yet how that would factor in.
 * Clock
   Here I keep track of the time I waste on this futile effort.
   #+BEGIN: clocktable :scope file :maxlevel 202 :emphasize t
-  #+CAPTION: Clock summary at [2022-06-08 Mi 21:33]
-  | Headline         | Time      |         |
-  |------------------+-----------+---------|
-  | *Total time*     | *1d 3:42* |         |
-  |------------------+-----------+---------|
-  | *Moving parts*   | *1d 3:42* |         |
-  | \_  /Data types/ |           | /2:40/  |
-  | \_  /Database/   |           | /7:25/  |
-  | \_  /Scanner/    |           | /1:50/  |
-  | \_  /GUI/        |           | /15:47/ |
+  #+CAPTION: Clock summary at [2022-06-10 Fr 16:10]
+  | Headline         | Time       |         |
+  |------------------+------------+---------|
+  | *Total time*     | *1d 11:01* |         |
+  |------------------+------------+---------|
+  | *Moving parts*   | *1d 11:01* |         |
+  | \_  /Data types/ |            | /2:40/  |
+  | \_  /Database/   |            | /7:25/  |
+  | \_  /Scanner/    |            | /1:50/  |
+  | \_  /GUI/        |            | /23:06/ |
   #+END:
 
 * Moving parts
@@ -53,6 +53,10 @@ yet how that would factor in.
    Scanner walks directory trees looking for audio files. Roughly speaking.
 ** GUI
    :LOGBOOK:
+   CLOCK: [2022-06-10 Fr 15:10]--[2022-06-10 Fr 16:10] =>  1:00
+   CLOCK: [2022-06-09 Do 20:04]--[2022-06-09 Do 23:44] =>  3:40
+   CLOCK: [2022-06-09 Do 17:23]--[2022-06-09 Do 19:48] =>  2:25
+   CLOCK: [2022-06-09 Do 13:30]--[2022-06-09 Do 13:44] =>  0:14
    CLOCK: [2022-06-08 Mi 15:56]--[2022-06-08 Mi 21:33] =>  5:37
    CLOCK: [2022-06-07 Di 21:14]--[2022-06-07 Di 22:14] =>  1:00
    CLOCK: [2022-06-07 Di 17:50]--[2022-06-07 Di 19:37] =>  1:47

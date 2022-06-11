@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-10 16:34:29 krylon>
+// Time-stamp: <2022-06-11 17:51:42 krylon>
 
 package ui
 
@@ -11,6 +11,7 @@ import (
 	"log"
 	"math"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -120,6 +121,8 @@ type RWin struct {
 	menu        *gtk.MenuBar
 	statusbar   *gtk.Statusbar
 	progs       map[int64]*gtk.TreeIter
+	fCache      map[int64]*objects.File
+	pCache      map[int64]*objects.Program
 }
 
 // Create creates a GUI. Who would've thought?
@@ -172,7 +175,10 @@ func Create() (*RWin, error) {
 	} else if win.statusbar, err = gtk.StatusbarNew(); err != nil {
 		win.log.Printf("[ERROR] Cannot create status bar: %s\n", err.Error())
 		return nil, err
-	} // else if win.store, err = gtk.TreeStoreNew(
+	}
+
+	win.fCache = make(map[int64]*objects.File)
+	win.pCache = make(map[int64]*objects.Program)
 
 	var typeList = make([]glib.Type, len(cols))
 
@@ -189,6 +195,8 @@ func Create() (*RWin, error) {
 			err.Error())
 		return nil, err
 	}
+
+	win.store.SetDefaultSortFunc(win.cmpIter)
 
 	for i, c := range cols {
 		var (
@@ -284,8 +292,8 @@ func (w *RWin) initializeTree() error {
 			piter = w.store.Append(nil)
 		)
 
+		w.pCache[p.ID] = p.Clone()
 		w.progs[p.ID] = piter
-
 		w.store.SetValue(piter, 0, p.ID)
 		w.store.SetValue(piter, 1, p.Title)
 
@@ -301,6 +309,8 @@ func (w *RWin) initializeTree() error {
 				dur   time.Duration
 				fiter = w.store.Append(piter)
 			)
+
+			w.fCache[f.ID] = f.Clone()
 
 			if dur, err = f.Duration(); err != nil {
 				w.log.Printf("[ERROR] Cannot get Duration for File %q: %s\n",
@@ -338,6 +348,8 @@ func (w *RWin) initializeTree() error {
 			dur   time.Duration
 			fiter = w.store.Append(piter)
 		)
+
+		w.fCache[f.ID] = f.Clone()
 
 		if dur, err = f.Duration(); err != nil {
 			w.log.Printf("[ERROR] Cannot get Duration for File %q: %s\n",
@@ -640,6 +652,8 @@ func (w *RWin) handleAddProgram() {
 		return
 	}
 
+	w.pCache[p.ID] = p.Clone()
+
 	var piter = w.store.Append(nil)
 
 	w.progs[p.ID] = piter
@@ -650,8 +664,6 @@ func (w *RWin) handleAddProgram() {
 
 func (w *RWin) ckFileQueue() bool {
 	var f *objects.File
-
-	// w.log.Printf("[TRACE] Checking file queue\n")
 
 	select {
 	case <-w.ticker.C:
@@ -665,6 +677,8 @@ func (w *RWin) ckFileQueue() bool {
 		)
 
 		w.log.Printf("[DEBUG] Got file from queue: %s\n", f.Path)
+
+		w.fCache[f.ID] = f
 
 		if dur, err = f.Duration(); err != nil {
 			w.log.Printf("[ERROR] Cannot determine duration of file %s: %s\n",
@@ -1190,3 +1204,126 @@ FINISH:
 func (w *RWin) playProgram(p *objects.Program) {
 	w.displayMsg(fmt.Sprintf("Play Program %q - IMPLEMENTME!!!", p.Title))
 } // func (w *RWin) playProgram(p *objects.Program)
+
+func (w *RWin) cmpIter(m *gtk.TreeModel, a, b *gtk.TreeIter) int {
+	var (
+		err                    error
+		val                    *glib.Value
+		gv                     any
+		pid1, fid1, pid2, fid2 int64
+	)
+
+	if val, err = m.GetValue(a, 0); err != nil {
+		w.log.Printf("[ERROR] Cannot get value from column 0: %s\n",
+			err.Error())
+		return 0
+	} else if gv, err = val.GoValue(); err != nil {
+		w.log.Printf("[ERROR] Cannot convert GLib value to Go value: %s\n",
+			err.Error())
+		return 0
+	}
+
+	switch v := gv.(type) {
+	case int:
+		pid1 = int64(v)
+	case int64:
+		pid1 = v
+	default:
+		w.log.Printf("[CANTHAPPEN] Unexpected type for PID Column: %T (%#v)\n",
+			v,
+			v)
+		return 0
+	}
+
+	if val, err = m.GetValue(a, 2); err != nil {
+		w.log.Printf("[ERROR] Cannot get value from column 2: %s\n",
+			err.Error())
+		return 0
+	} else if gv, err = val.GoValue(); err != nil {
+		w.log.Printf("[ERROR] Cannot convert GLib value to Go value: %s\n",
+			err.Error())
+		return 0
+	}
+
+	switch v := gv.(type) {
+	case int:
+		fid1 = int64(v)
+	case int64:
+		fid1 = v
+	default:
+		w.log.Printf("[CANTHAPPEN] Unexpected type for FID Column: %T (%#v)\n",
+			v,
+			v)
+		return 0
+	}
+
+	if val, err = m.GetValue(b, 0); err != nil {
+		w.log.Printf("[ERROR] Cannot get value from column 0: %s\n",
+			err.Error())
+		return 0
+	} else if gv, err = val.GoValue(); err != nil {
+		w.log.Printf("[ERROR] Cannot convert GLib value to Go value: %s\n",
+			err.Error())
+		return 0
+	}
+
+	switch v := gv.(type) {
+	case int:
+		pid2 = int64(v)
+	case int64:
+		pid2 = v
+	default:
+		w.log.Printf("[CANTHAPPEN] Unexpected type for PID Column: %T (%#v)\n",
+			v,
+			v)
+		return 0
+	}
+
+	if val, err = m.GetValue(b, 2); err != nil {
+		w.log.Printf("[ERROR] Cannot get value from column 2: %s\n",
+			err.Error())
+		return 0
+	} else if gv, err = val.GoValue(); err != nil {
+		w.log.Printf("[ERROR] Cannot convert GLib value to Go value: %s\n",
+			err.Error())
+		return 0
+	}
+
+	switch v := gv.(type) {
+	case int:
+		fid2 = int64(v)
+	case int64:
+		fid2 = v
+	default:
+		w.log.Printf("[CANTHAPPEN] Unexpected type for FID Column: %T (%#v)\n",
+			v,
+			v)
+		return 0
+	}
+
+	var (
+		prog1, prog2 *objects.Program
+		file1, file2 *objects.File
+	)
+
+	prog1 = w.pCache[pid1]
+	prog2 = w.pCache[pid2]
+	file1 = w.fCache[fid1]
+	file2 = w.fCache[fid2]
+
+	if pid1 == pid2 {
+		if pid1 >= 0 {
+			return 0
+		}
+
+		return strings.Compare(file1.DisplayTitle(), file2.DisplayTitle())
+	} else if pid1 == 0 {
+		return -1
+	} else if pid2 == 0 {
+		return 1
+	} else if pid1 > 0 && pid2 > 0 {
+		return strings.Compare(prog1.Title, prog2.Title)
+	} else {
+		return strings.Compare(prog1.Title, prog2.Title)
+	}
+} // func (w *RWin) cmpIter(m *gtk.TreeModel, a, b *gtk.TreeIter) int

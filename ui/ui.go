@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-11 17:51:42 krylon>
+// Time-stamp: <2022-06-11 18:13:35 krylon>
 
 package ui
 
@@ -1306,8 +1306,8 @@ func (w *RWin) cmpIter(m *gtk.TreeModel, a, b *gtk.TreeIter) int {
 		file1, file2 *objects.File
 	)
 
-	prog1 = w.pCache[pid1]
-	prog2 = w.pCache[pid2]
+	prog1 = w.pCache[abs(pid1)]
+	prog2 = w.pCache[abs(pid2)]
 	file1 = w.fCache[fid1]
 	file2 = w.fCache[fid2]
 
@@ -1327,3 +1327,13 @@ func (w *RWin) cmpIter(m *gtk.TreeModel, a, b *gtk.TreeIter) int {
 		return strings.Compare(prog1.Title, prog2.Title)
 	}
 } // func (w *RWin) cmpIter(m *gtk.TreeModel, a, b *gtk.TreeIter) int
+
+func abs(n int64) int64 {
+	if n == math.MinInt32 {
+		return 0
+	} else if n < 0 {
+		return -n
+	} else {
+		return n
+	}
+} // func abs(n int64) int64

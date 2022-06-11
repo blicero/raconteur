@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-02 19:05:33 krylon>
+// Time-stamp: <2022-06-11 17:45:13 krylon>
 
 package objects
 
@@ -36,3 +36,23 @@ func (f *File) DisplayTitle() string {
 func (f *File) Duration() (time.Duration, error) {
 	return 0, nil
 } // func (f *File) Duration() (time.Duration, error)
+
+// Clone returns an identical copy of the receiver.
+func (f *File) Clone() *File {
+	var ord = make([]int, len(f.Order))
+
+	for idx, o := range f.Order {
+		ord[idx] = o
+	}
+
+	return &File{
+		ID:         f.ID,
+		ProgramID:  f.ProgramID,
+		Path:       f.Path,
+		Title:      f.Title,
+		URL:        f.URL,
+		Order:      ord,
+		Position:   f.Position,
+		LastPlayed: f.LastPlayed,
+	}
+} // func (f *File) Clone() *File

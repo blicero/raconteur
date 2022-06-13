@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-11 18:13:35 krylon>
+// Time-stamp: <2022-06-13 20:08:31 krylon>
 
 package ui
 
@@ -272,9 +272,18 @@ func (w *RWin) Run() {
 func (w *RWin) initializeTree() error {
 	var (
 		err error
+		sel *gtk.TreeSelection
 		d   = w.pool.Get()
 	)
 	defer w.pool.Put(d)
+
+	if sel, err = w.view.GetSelection(); err != nil {
+		w.log.Printf("[ERROR] Cannot get TreeSelection: %s\n",
+			err.Error())
+		return err
+	}
+
+	sel.SetMode(gtk.SELECTION_MULTIPLE)
 
 	var plist []objects.Program
 
@@ -704,11 +713,9 @@ func (w *RWin) ckFileQueue() bool {
 } // func (w *RWin) ckFileQueue()
 
 func (w *RWin) handleFileListClick(view *gtk.TreeView, evt *gdk.Event) {
-	krylib.Trace()
-	defer w.log.Printf("[TRACE] EXIT %s\n",
-		krylib.TraceInfo())
 	var be = gdk.EventButtonNewFromEvent(evt)
 
+	// We are only interested in right-clicks.
 	if be.Button() != gdk.BUTTON_SECONDARY {
 		return
 	}
@@ -719,9 +726,11 @@ func (w *RWin) handleFileListClick(view *gtk.TreeView, evt *gdk.Event) {
 		x, y   float64
 		path   *gtk.TreePath
 		col    *gtk.TreeViewColumn
-		model  *gtk.TreeModel
-		imodel gtk.ITreeModel
 		iter   *gtk.TreeIter
+		iters  []*gtk.TreeIter
+		sel    *gtk.TreeSelection
+		rows   *glib.List
+		menu   *gtk.Menu
 	)
 
 	x = be.X()
@@ -741,93 +750,73 @@ func (w *RWin) handleFileListClick(view *gtk.TreeView, evt *gdk.Event) {
 		y,
 		path)
 
-	if imodel, err = view.GetModel(); err != nil {
-		w.log.Printf("[ERROR] Cannot get Model from View: %s\n",
+	if sel, err = w.view.GetSelection(); err != nil {
+		w.log.Printf("[ERROR] Cannot get TreeSelection: %s\n",
 			err.Error())
 		return
 	}
 
-	model = imodel.ToTreeModel()
+	rows = sel.GetSelectedRows(w.store)
 
-	if iter, err = model.GetIter(path); err != nil {
-		w.log.Printf("[ERROR] Cannot get Iter from TreePath %s: %s\n",
-			path,
-			err.Error())
-		return
-	}
+	iters = make([]*gtk.TreeIter, 0, rows.Length())
 
-	var title string = col.GetTitle()
-	w.log.Printf("[DEBUG] Column %s was clicked\n",
-		title)
+	rows.Foreach(func(i interface{}) {
+		switch r := i.(type) {
+		case *gtk.TreePath:
+			if i, e := w.store.GetIter(r); err != nil {
+				w.log.Printf("[ERROR] Cannot get Iter for Path %s: %s\n",
+					r,
+					e.Error())
+			} else {
+				iters = append(iters, i)
+			}
+		default:
+			w.log.Printf("[CANTHAPPEN] Invalid type for GetSelectedRows: %T\n",
+				i)
+		}
+	})
 
-	var (
-		val      *glib.Value
-		gv       interface{}
-		pid, fid int64
-	)
+	if len(iters) == 1 {
+		iter = iters[0]
 
-	if val, err = model.GetValue(iter, 0); err != nil {
-		w.log.Printf("[ERROR] Cannot get value for column 0: %s\n",
-			err.Error())
-		return
-	} else if gv, err = val.GoValue(); err != nil {
-		w.log.Printf("[ERROR] Cannot get Go value from GLib value: %s\n",
-			err.Error())
-	}
+		var title string = col.GetTitle()
+		w.log.Printf("[DEBUG] Column %s was clicked\n",
+			title)
 
-	switch v := gv.(type) {
-	case int:
-		pid = int64(v)
-	case int64:
-		pid = v
-	default:
-		w.log.Printf("[ERROR] Unexpected type for ID column: %T\n",
-			v)
-		return
-	}
+		var (
+			pid, fid int64
+		)
 
-	if val, err = model.GetValue(iter, 2); err != nil {
-		w.log.Printf("[ERROR] Cannot get value for column 2: %s\n",
-			err.Error())
-		return
-	} else if gv, err = val.GoValue(); err != nil {
-		w.log.Printf("[ERROR] Cannot get value from GLib value: %s\n",
-			err.Error())
-		return
-	}
-
-	switch v := gv.(type) {
-	case int:
-		fid = int64(v)
-	case int64:
-		fid = v
-	default:
-		w.log.Printf("[ERROR] Unexpected type for ID column: %T\n",
-			v)
-		return
-	}
-
-	w.log.Printf("[DEBUG] PID of clicked-on row is %d, FID is %d\n",
-		pid,
-		fid)
-
-	var menu *gtk.Menu
-
-	// First of all, we need to figure out if we clicked on a Program or a File.
-	if pid >= 0 {
-		w.log.Printf("[DEBUG] We clicked on a Program\n")
-		if menu, err = w.mkContextMenuProgram(iter, pid); err != nil {
-			w.log.Printf("[ERROR] Cannot create context menu: %s\n",
+		if pid, fid, err = w.getPidFid(iter); err != nil {
+			w.log.Printf("[ERROR] Cannot get PID/FID: %s\n",
 				err.Error())
 			return
+		}
+
+		w.log.Printf("[DEBUG] PID of clicked-on row is %d, FID is %d\n",
+			pid,
+			fid)
+
+		// First of all, we need to figure out if we clicked on a Program or a File.
+		if pid >= 0 {
+			w.log.Printf("[DEBUG] We clicked on a Program\n")
+			if menu, err = w.mkContextMenuProgram(iter, pid); err != nil {
+				w.log.Printf("[ERROR] Cannot create context menu: %s\n",
+					err.Error())
+				return
+			}
+		} else {
+			w.log.Printf("[DEBUG] We clicked on a File\n")
+			if menu, err = w.mkContextMenuFile(iter, fid); err != nil {
+				w.log.Printf("[ERROR] Cannot create context menu: %s\n",
+					err.Error())
+				return
+			}
 		}
 	} else {
-		w.log.Printf("[DEBUG] We clicked on a File\n")
-		if menu, err = w.mkContextMenuFile(iter, fid); err != nil {
-			w.log.Printf("[ERROR] Cannot create context menu: %s\n",
-				err.Error())
-			return
-		}
+
+		w.displayMsg("Handling multiple selection is not implemented, yet.")
+		return
 	}
 
 	menu.ShowAll()
@@ -954,6 +943,87 @@ func (w *RWin) mkContextMenuFile(iter *gtk.TreeIter, fid int64) (*gtk.Menu, erro
 
 	return menu, nil
 } // func (w *RWin) mkContextMenuFile(iter *gtk.TreeIter, fid int64) (*gtk.Menu, error)
+
+func (w *RWin) mkContextMenuMultipleFiles(iters []*gtk.TreeIter, fids []int64) (*gtk.Menu, error) {
+	var (
+		err                error
+		editItem, progItem *gtk.MenuItem
+		menu, progMenu     *gtk.Menu
+		c                  *db.Database
+		f                  *objects.File
+		progs              []objects.Program
+	)
+
+	c = w.pool.Get()
+	defer w.pool.Put(c)
+
+	if f, err = c.FileGetByID(fid); err != nil {
+		w.log.Printf("[ERROR] Cannot load File %d: %s\n",
+			fid,
+			err.Error())
+		return nil, err
+	} else if progs, err = c.ProgramGetAll(); err != nil {
+		w.log.Printf("[ERROR] Cannot load all Programs: %s\n",
+			err.Error())
+		return nil, err
+	} else if menu, err = gtk.MenuNew(); err != nil {
+		w.log.Printf("[ERROR] Cannot create context menu: %s\n",
+			err.Error())
+		return nil, err
+	} else if progMenu, err = gtk.MenuNew(); err != nil {
+		w.log.Printf("[ERROR] Cannot create Program submenu: %s\n",
+			err.Error())
+		return nil, err
+	} else if editItem, err = gtk.MenuItemNewWithMnemonic("_Edit"); err != nil {
+		w.log.Printf("[ERROR] Cannot create Edit item: %s\n",
+			err.Error())
+		return nil, err
+	} else if progItem, err = gtk.MenuItemNewWithMnemonic("_Program"); err != nil {
+		w.log.Printf("[ERROR] Cannot create Program item: %s\n",
+			err.Error())
+		return nil, err
+	}
+
+	editItem.Connect("activate", func() { w.editFile(f, iter) })
+	menu.Append(editItem)
+	menu.Append(progItem)
+	progItem.SetSubmenu(progMenu)
+
+	var (
+		pitem *gtk.CheckMenuItem
+	)
+
+	if pitem, err = gtk.CheckMenuItemNewWithLabel("(NULL)"); err != nil {
+		w.log.Printf("[ERROR] Cannot create CheckMenuItem: %s\n",
+			err.Error())
+		return nil, err
+	}
+
+	pitem.SetActive(f.ProgramID == 0)
+	pitem.Connect("activate", func() { w.fileSetProgram(iter, f, nil) })
+	progMenu.Append(pitem)
+
+	for _, p := range progs {
+		if pitem, err = gtk.CheckMenuItemNewWithLabel(p.Title); err != nil {
+			w.log.Printf("[ERROR] Cannot create RadioMenuItem for Program %q: %s\n",
+				p.Title,
+				err.Error())
+			return nil, err
+		}
+
+		w.log.Printf("[TRACE] Create menu item for Program %d (%q)\n",
+			p.ID,
+			p.Title)
+
+		var pParm = p.Clone()
+
+		pitem.SetActive(p.ID == f.ProgramID)
+		pitem.Connect("activate", func() { w.fileSetProgram(iter, f, pParm) })
+		progMenu.Append(pitem)
+	}
+
+	return menu, nil
+} // func (w *RWin) mkContextMenu(iter *gtk.TreeIter, fid int64) (*gtk.Menu, error)
 
 func (w *RWin) fileSetProgram(iter *gtk.TreeIter, f *objects.File, p *objects.Program) {
 	var (
@@ -1327,6 +1397,60 @@ func (w *RWin) cmpIter(m *gtk.TreeModel, a, b *gtk.TreeIter) int {
 		return strings.Compare(prog1.Title, prog2.Title)
 	}
 } // func (w *RWin) cmpIter(m *gtk.TreeModel, a, b *gtk.TreeIter) int
+
+func (w *RWin) getPidFid(iter *gtk.TreeIter) (int64, int64, error) {
+	var (
+		err      error
+		pid, fid int64
+		val      *glib.Value
+		gv       any
+	)
+
+	if val, err = w.store.GetValue(iter, 0); err != nil {
+		w.log.Printf("[ERROR] Cannot get value from TreeIter: %s\n",
+			err.Error())
+		return 0, 0, err
+	} else if gv, err = val.GoValue(); err != nil {
+		w.log.Printf("[ERROR] Cannot get Go value from GLib value: %s\n",
+			err.Error())
+		return 0, 0, err
+	}
+
+	switch v := gv.(type) {
+	case int:
+		pid = int64(v)
+	case int64:
+		pid = v
+	default:
+		w.log.Printf("[CANTHAPPEN] Unexpected type for ID column: %T\n",
+			v)
+		return 0, 0, fmt.Errorf("Unexpected type for ID column: %T\n",
+			v)
+	}
+
+	if val, err = w.store.GetValue(iter, 2); err != nil {
+		w.log.Printf("[ERROR] Cannot get value for column 2: %s\n",
+			err.Error())
+		return 0, 0, err
+	} else if gv, err = val.GoValue(); err != nil {
+		w.log.Printf("[ERROR] Cannot get value from GLib value: %s\n",
+			err.Error())
+		return 0, 0, err
+	}
+
+	switch v := gv.(type) {
+	case int:
+		fid = int64(v)
+	case int64:
+		fid = v
+	default:
+		w.log.Printf("[CANTHAPPEN] Unexpected type for ID column: %T\n",
+			v)
+		return 0, 0, err
+	}
+
+	return pid, fid, nil
+} // func (w *RWin) getPidFid(iter *gtk.TreeIter) (int64, int64, error)
 
 func abs(n int64) int64 {
 	if n == math.MinInt32 {

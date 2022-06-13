@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-06-11 17:57:37 krylon>
+# Time-stamp: <2022-06-13 21:29:44 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -18,16 +18,19 @@ yet how that would factor in.
 * Clock
   Here I keep track of the time I waste on this futile effort.
   #+BEGIN: clocktable :scope file :maxlevel 202 :emphasize t
-  #+CAPTION: Clock summary at [2022-06-11 Sa 17:57]
-  | Headline         | Time       |           |
-  |------------------+------------+-----------|
-  | *Total time*     | *1d 17:55* |           |
-  |------------------+------------+-----------|
-  | *Moving parts*   | *1d 17:55* |           |
-  | \_  /Data types/ |            | /2:40/    |
-  | \_  /Database/   |            | /7:25/    |
-  | \_  /Scanner/    |            | /1:50/    |
-  | \_  /GUI/        |            | /1d 6:00/ |
+  #+CAPTION: Clock summary at [2022-06-13 Mo 21:29]
+  | Headline                   | Time      |            |      |      |
+  |----------------------------+-----------+------------+------+------|
+  | *Total time*               | *2d 3:04* |            |      |      |
+  |----------------------------+-----------+------------+------+------|
+  | *Moving parts*             | *2d 3:04* |            |      |      |
+  | \_  /Data types/           |           | /2:40/     |      |      |
+  | \_  /Database/             |           | /7:25/     |      |      |
+  | \_  /Scanner/              |           | /1:50/     |      |      |
+  | \_  /GUI/                  |           | /1d 15:09/ |      |      |
+  | \_    TreeView             |           |            | 9:09 |      |
+  | \_      Multiple Selection |           |            |      | 7:33 |
+  | \_      Sorting            |           |            |      | 1:36 |
   #+END:
 
 * Moving parts
@@ -69,5 +72,16 @@ yet how that would factor in.
    Like I said, we're going to use gotk3, the Go bindings to Gtk3. I think
    Gtk4 is a thing, but ... whatever, I'm still slightly annoyed I cannot just
    use Gtk2, although the changes seem to not be that drastic.
+*** TreeView
+**** TODO Multiple Selection
+     :LOGBOOK:
+     CLOCK: [2022-06-13 Mo 17:09]--[2022-06-13 Mo 21:27] =>  4:18
+     CLOCK: [2022-06-11 Sa 19:35]--[2022-06-11 Sa 22:50] =>  3:15
+     :END:
+**** TODO Sorting
+     :LOGBOOK:
+     CLOCK: [2022-06-11 Sa 17:59]--[2022-06-11 Sa 19:35] =>  1:36
+     :END:
+     Maybe another day?
 * Questions
 * Bugs

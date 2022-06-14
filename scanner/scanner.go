@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-04 16:43:53 krylon>
+// Time-stamp: <2022-06-14 20:57:17 krylon>
 
 // Package scanner implements processing directory trees looking for files that,
 // allegedly, are podcast episodes, audio books, or parts of audio books.
@@ -120,6 +120,79 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 		}
 	}
 
+	var (
+		txStatus bool
+		album    string
+		meta     map[string]string
+	)
+
+	if meta, err = getMetaAudio(f); err != nil {
+		w.log.Printf("[ERROR] Cannot extract metadata from %s: %s\n",
+			f.Path,
+			err.Error())
+	} else if err = w.db.Begin(); err != nil {
+		w.log.Printf("[ERROR] Cannot start transaction: %s\n",
+			err.Error())
+		goto SEND_FILE
+	}
+
+	if title := meta["Title"]; title != "" {
+		if err = w.db.FileSetTitle(f, title); err != nil {
+			w.log.Printf("[ERROR] Cannot set Title for File %s to %q: %s\n",
+				f.Path,
+				title,
+				err.Error())
+			goto FINISH_TX
+		}
+	}
+
+	if album = meta["Album"]; album == "" {
+		album = f.GetParentFolder()
+		if album == filepath.Base(w.root) {
+			album = ""
+		}
+	}
+
+	if album != "" {
+		var prog *objects.Program
+
+		if prog, err = w.db.ProgramGetByTitle(album); err != nil {
+			w.log.Printf("[ERROR] Failed to look for Program %q: %s\n",
+				album,
+				err.Error())
+			goto FINISH_TX
+		} else if prog == nil {
+			prog = &objects.Program{
+				Title:   album,
+				Creator: meta["Artist"],
+			}
+
+			if err = w.db.ProgramAdd(prog); err != nil {
+				w.log.Printf("[ERROR] Cannot add Program %s: %s\n",
+					album,
+					err.Error())
+				goto FINISH_TX
+			}
+		}
+
+		if err = w.db.FileSetProgram(f, prog); err != nil {
+			w.log.Printf("[ERROR] Cannot set Program for File %q to %q: %s\n",
+				f.Path,
+				album,
+				err.Error())
+		}
+	}
+
+	txStatus = true
+
+FINISH_TX:
+	if txStatus {
+		w.db.Commit()
+	} else {
+		w.db.Rollback()
+	}
+
+SEND_FILE:
 	w.Files <- f
 
 	return nil

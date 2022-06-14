@@ -2,12 +2,13 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-11 17:45:13 krylon>
+// Time-stamp: <2022-06-14 18:54:14 krylon>
 
 package objects
 
 import (
 	"path"
+	"path/filepath"
 	"time"
 )
 
@@ -56,3 +57,9 @@ func (f *File) Clone() *File {
 		LastPlayed: f.LastPlayed,
 	}
 } // func (f *File) Clone() *File
+
+// GetParentFolder returns the name of the Folder the file lives in,
+// i.e. basename(dirname(path))
+func (f *File) GetParentFolder() string {
+	return filepath.Base(filepath.Dir(f.Path))
+} // func (f *File) GetParentFolder() string

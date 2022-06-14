@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 08. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-09 17:27:44 krylon>
+// Time-stamp: <2022-06-14 21:00:50 krylon>
 
 // Package db provides a wrapper around the actual database connection.
 package db
@@ -965,6 +965,58 @@ EXEC_QUERY:
 
 	return nil, nil
 } // func (db *Database) ProgramGetByID(id int64) (*objects.Program, error)
+
+func (db *Database) ProgramGetByTitle(title string) (*objects.Program, error) {
+	const qid query.ID = query.ProgramGetByTitle
+	var (
+		err  error
+		stmt *sql.Stmt
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid,
+			err.Error())
+		return nil, err
+	} else if db.tx != nil {
+		stmt = db.tx.Stmt(stmt)
+	}
+
+	var rows *sql.Rows
+
+EXEC_QUERY:
+	if rows, err = stmt.Query(title); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		}
+
+		return nil, err
+	}
+
+	defer rows.Close() // nolint: errcheck,gosec
+
+	if rows.Next() {
+		var (
+			u string
+			p = &objects.Program{Title: title}
+		)
+
+		if err = rows.Scan(&p.ID, &p.Creator, &u); err != nil {
+			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
+			return nil, err
+		} else if p.URL, err = url.Parse(u); err != nil {
+			db.log.Printf("[ERROR] Cannot parse URL %q: %s\n",
+				u,
+				err.Error())
+			return nil, err
+		}
+
+		return p, nil
+	}
+
+	return nil, nil
+} // func (db *Database) ProgramGetByTitle(title string) (*objects.Program, error)
 
 // ProgramGetAll loads all Programs from the Database.
 func (db *Database) ProgramGetAll() ([]objects.Program, error) {

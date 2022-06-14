@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-13 20:08:31 krylon>
+// Time-stamp: <2022-06-14 21:12:19 krylon>
 
 package ui
 
@@ -698,7 +698,33 @@ func (w *RWin) ckFileQueue() bool {
 			dstr = dur.String()
 		}
 
-		piter, _ = w.store.GetIterFirst()
+		if f.ProgramID != 0 {
+			if piter = w.progs[f.ProgramID]; piter == nil {
+				var (
+					p *objects.Program
+					c = w.pool.Get()
+				)
+				defer w.pool.Put(c)
+
+				if p, err = c.ProgramGetByID(f.ProgramID); err != nil {
+					w.log.Printf("[ERROR] Cannot fetch Program %d from database: %s\n",
+						f.ProgramID,
+						err.Error())
+					piter, _ = w.store.GetIterFirst()
+				} else if p == nil {
+					w.log.Printf("[CANTHAPPEN] Cannot find Program %d in database.\n",
+						f.ProgramID)
+					piter, _ = w.store.GetIterFirst()
+				} else {
+					piter = w.store.Append(nil)
+					w.store.SetValue(piter, 0, p.ID)
+					w.store.SetValue(piter, 1, p.Title)
+					w.progs[p.ID] = piter
+				}
+			}
+		} else {
+			piter, _ = w.store.GetIterFirst()
+		}
 
 		fiter = w.store.Append(piter)
 
@@ -944,86 +970,86 @@ func (w *RWin) mkContextMenuFile(iter *gtk.TreeIter, fid int64) (*gtk.Menu, erro
 	return menu, nil
 } // func (w *RWin) mkContextMenuFile(iter *gtk.TreeIter, fid int64) (*gtk.Menu, error)
 
-func (w *RWin) mkContextMenuMultipleFiles(iters []*gtk.TreeIter, fids []int64) (*gtk.Menu, error) {
-	var (
-		err                error
-		editItem, progItem *gtk.MenuItem
-		menu, progMenu     *gtk.Menu
-		c                  *db.Database
-		f                  *objects.File
-		progs              []objects.Program
-	)
+// func (w *RWin) mkContextMenuMultipleFiles(iters []*gtk.TreeIter, fids []int64) (*gtk.Menu, error) {
+// 	var (
+// 		err                error
+// 		editItem, progItem *gtk.MenuItem
+// 		menu, progMenu     *gtk.Menu
+// 		c                  *db.Database
+// 		f                  *objects.File
+// 		progs              []objects.Program
+// 	)
 
-	c = w.pool.Get()
-	defer w.pool.Put(c)
+// 	c = w.pool.Get()
+// 	defer w.pool.Put(c)
 
-	if f, err = c.FileGetByID(fid); err != nil {
-		w.log.Printf("[ERROR] Cannot load File %d: %s\n",
-			fid,
-			err.Error())
-		return nil, err
-	} else if progs, err = c.ProgramGetAll(); err != nil {
-		w.log.Printf("[ERROR] Cannot load all Programs: %s\n",
-			err.Error())
-		return nil, err
-	} else if menu, err = gtk.MenuNew(); err != nil {
-		w.log.Printf("[ERROR] Cannot create context menu: %s\n",
-			err.Error())
-		return nil, err
-	} else if progMenu, err = gtk.MenuNew(); err != nil {
-		w.log.Printf("[ERROR] Cannot create Program submenu: %s\n",
-			err.Error())
-		return nil, err
-	} else if editItem, err = gtk.MenuItemNewWithMnemonic("_Edit"); err != nil {
-		w.log.Printf("[ERROR] Cannot create Edit item: %s\n",
-			err.Error())
-		return nil, err
-	} else if progItem, err = gtk.MenuItemNewWithMnemonic("_Program"); err != nil {
-		w.log.Printf("[ERROR] Cannot create Program item: %s\n",
-			err.Error())
-		return nil, err
-	}
+// 	if f, err = c.FileGetByID(fid); err != nil {
+// 		w.log.Printf("[ERROR] Cannot load File %d: %s\n",
+// 			fid,
+// 			err.Error())
+// 		return nil, err
+// 	} else if progs, err = c.ProgramGetAll(); err != nil {
+// 		w.log.Printf("[ERROR] Cannot load all Programs: %s\n",
+// 			err.Error())
+// 		return nil, err
+// 	} else if menu, err = gtk.MenuNew(); err != nil {
+// 		w.log.Printf("[ERROR] Cannot create context menu: %s\n",
+// 			err.Error())
+// 		return nil, err
+// 	} else if progMenu, err = gtk.MenuNew(); err != nil {
+// 		w.log.Printf("[ERROR] Cannot create Program submenu: %s\n",
+// 			err.Error())
+// 		return nil, err
+// 	} else if editItem, err = gtk.MenuItemNewWithMnemonic("_Edit"); err != nil {
+// 		w.log.Printf("[ERROR] Cannot create Edit item: %s\n",
+// 			err.Error())
+// 		return nil, err
+// 	} else if progItem, err = gtk.MenuItemNewWithMnemonic("_Program"); err != nil {
+// 		w.log.Printf("[ERROR] Cannot create Program item: %s\n",
+// 			err.Error())
+// 		return nil, err
+// 	}
 
-	editItem.Connect("activate", func() { w.editFile(f, iter) })
-	menu.Append(editItem)
-	menu.Append(progItem)
-	progItem.SetSubmenu(progMenu)
+// 	editItem.Connect("activate", func() { w.editFile(f, iter) })
+// 	menu.Append(editItem)
+// 	menu.Append(progItem)
+// 	progItem.SetSubmenu(progMenu)
 
-	var (
-		pitem *gtk.CheckMenuItem
-	)
+// 	var (
+// 		pitem *gtk.CheckMenuItem
+// 	)
 
-	if pitem, err = gtk.CheckMenuItemNewWithLabel("(NULL)"); err != nil {
-		w.log.Printf("[ERROR] Cannot create CheckMenuItem: %s\n",
-			err.Error())
-		return nil, err
-	}
+// 	if pitem, err = gtk.CheckMenuItemNewWithLabel("(NULL)"); err != nil {
+// 		w.log.Printf("[ERROR] Cannot create CheckMenuItem: %s\n",
+// 			err.Error())
+// 		return nil, err
+// 	}
 
-	pitem.SetActive(f.ProgramID == 0)
-	pitem.Connect("activate", func() { w.fileSetProgram(iter, f, nil) })
-	progMenu.Append(pitem)
+// 	pitem.SetActive(f.ProgramID == 0)
+// 	pitem.Connect("activate", func() { w.fileSetProgram(iter, f, nil) })
+// 	progMenu.Append(pitem)
 
-	for _, p := range progs {
-		if pitem, err = gtk.CheckMenuItemNewWithLabel(p.Title); err != nil {
-			w.log.Printf("[ERROR] Cannot create RadioMenuItem for Program %q: %s\n",
-				p.Title,
-				err.Error())
-			return nil, err
-		}
+// 	for _, p := range progs {
+// 		if pitem, err = gtk.CheckMenuItemNewWithLabel(p.Title); err != nil {
+// 			w.log.Printf("[ERROR] Cannot create RadioMenuItem for Program %q: %s\n",
+// 				p.Title,
+// 				err.Error())
+// 			return nil, err
+// 		}
 
-		w.log.Printf("[TRACE] Create menu item for Program %d (%q)\n",
-			p.ID,
-			p.Title)
+// 		w.log.Printf("[TRACE] Create menu item for Program %d (%q)\n",
+// 			p.ID,
+// 			p.Title)
 
-		var pParm = p.Clone()
+// 		var pParm = p.Clone()
 
-		pitem.SetActive(p.ID == f.ProgramID)
-		pitem.Connect("activate", func() { w.fileSetProgram(iter, f, pParm) })
-		progMenu.Append(pitem)
-	}
+// 		pitem.SetActive(p.ID == f.ProgramID)
+// 		pitem.Connect("activate", func() { w.fileSetProgram(iter, f, pParm) })
+// 		progMenu.Append(pitem)
+// 	}
 
-	return menu, nil
-} // func (w *RWin) mkContextMenu(iter *gtk.TreeIter, fid int64) (*gtk.Menu, error)
+// 	return menu, nil
+// } // func (w *RWin) mkContextMenu(iter *gtk.TreeIter, fid int64) (*gtk.Menu, error)
 
 func (w *RWin) fileSetProgram(iter *gtk.TreeIter, f *objects.File, p *objects.Program) {
 	var (

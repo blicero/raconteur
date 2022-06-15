@@ -10,4 +10,7 @@ require (
 	github.com/odeke-em/go-uuid v0.0.0-20151221120446-b211d769a9aa
 )
 
-require github.com/mattn/go-sqlite3 v1.14.13
+require (
+	github.com/godbus/dbus/v5 v5.1.0
+	github.com/mattn/go-sqlite3 v1.14.13
+)

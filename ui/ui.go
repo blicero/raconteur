@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-14 22:02:11 krylon>
+// Time-stamp: <2022-06-15 22:52:09 krylon>
 
 package ui
 
@@ -11,6 +11,7 @@ import (
 	"log"
 	"math"
 	"net/url"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -21,6 +22,7 @@ import (
 	"github.com/blicero/raconteur/logdomain"
 	"github.com/blicero/raconteur/objects"
 	"github.com/blicero/raconteur/scanner"
+	"github.com/godbus/dbus/v5"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
@@ -123,6 +125,8 @@ type RWin struct {
 	progs       map[int64]*gtk.TreeIter
 	fCache      map[int64]*objects.File
 	pCache      map[int64]*objects.Program
+	mbus        *dbus.Conn
+	playerProc  *exec.Cmd
 }
 
 // Create creates a GUI. Who would've thought?
@@ -138,6 +142,10 @@ func Create() (*RWin, error) {
 		return nil, err
 	} else if win.pool, err = db.NewPool(4); err != nil {
 		win.log.Printf("[ERROR] Cannot create database pool: %s\n",
+			err.Error())
+		return nil, err
+	} else if win.mbus, err = dbus.SessionBus(); err != nil {
+		win.log.Printf("[ERROR] Cannot connect to session bus: %s\n",
 			err.Error())
 		return nil, err
 	} else if win.scanner, err = scanner.New(win.pool.Get()); err != nil {
@@ -1299,7 +1307,17 @@ FINISH:
 } // func (w *RWin) editProgram(p *objects.Program)
 
 func (w *RWin) playProgram(p *objects.Program) {
-	w.displayMsg(fmt.Sprintf("Play Program %q - IMPLEMENTME!!!", p.Title))
+	var err error
+
+	if err = w.playerCreate(); err != nil {
+		w.log.Printf("[ERROR] Cannot start player: %s\n",
+			err.Error())
+	} else if err = w.playerClearPlaylist(); err != nil {
+		w.log.Printf("[ERROR] Cannot clear playlist: %s\n",
+			err.Error())
+	} else {
+		w.playerPlayProgram(p)
+	}
 } // func (w *RWin) playProgram(p *objects.Program)
 
 func (w *RWin) cmpIter(m *gtk.TreeModel, a, b *gtk.TreeIter) int {

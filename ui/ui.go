@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-14 21:12:19 krylon>
+// Time-stamp: <2022-06-14 22:02:11 krylon>
 
 package ui
 
@@ -283,7 +283,8 @@ func (w *RWin) initializeTree() error {
 		return err
 	}
 
-	sel.SetMode(gtk.SELECTION_MULTIPLE)
+	//sel.SetMode(gtk.SELECTION_MULTIPLE)
+	sel.SetMode(gtk.SELECTION_SINGLE)
 
 	var plist []objects.Program
 

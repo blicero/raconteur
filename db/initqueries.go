@@ -2,11 +2,19 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-07 21:07:56 krylon>
+// Time-stamp: <2022-06-15 19:31:35 krylon>
 
 package db
 
 var initQueries = []string{
+	`
+CREATE TABLE folder (
+    id			INTEGER PRIMARY KEY,
+    path		TEXT UNIQUE NOT NULL,
+    last_scan           INTEGER NOT NULL DEFAULT 0,
+    CHECK (path LIKE '/%')
+)
+`,
 	`
 CREATE TABLE program (
     id                   INTEGER PRIMARY KEY,

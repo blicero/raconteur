@@ -1,11 +1,11 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-06-14 21:16:50 krylon>
+# Time-stamp: <2022-06-15 11:28:02 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
 #+TAGS: optimize(o) refactor(r) cleanup(c)
 #+TODO: TODO(t)  RESEARCH(r) IMPLEMENT(i) TEST(e) | DONE(d) FAILED(f) CANCELLED(c)
-#+TODO: MEDITATE(m) PLANNING(p)
+#+TODO: MEDITATE(m) PLANNING(p) | SUSPENDED(s)
 #+PRIORITIES: A G D
 
 Raconteur is an application to play audio books or podcasts.
@@ -80,8 +80,18 @@ yet how that would factor in.
    Like I said, we're going to use gotk3, the Go bindings to Gtk3. I think
    Gtk4 is a thing, but ... whatever, I'm still slightly annoyed I cannot just
    use Gtk2, although the changes seem to not be that drastic.
+*** TODO Playback
+    :LOGBOOK:
+    CLOCK: [2022-06-14 Di 21:56]--[2022-06-14 Di 22:27] =>  0:31
+    :END:
+    I am not quite sure how to approach this. Do I just invoke a regular media
+    player, or do I attempt to play the files myself? I /could/ use gstreamer,
+    for which Go bindings exist.
+    Also, if I use an external player, I /could/ just start a process, like
+    gPodder does, or I could use dbus to control the player. ???
 *** TreeView
-**** TODO Multiple Selection
+**** SUSPENDED Multiple Selection
+     CLOSED: [2022-06-14 Di 22:01]
      :LOGBOOK:
      CLOCK: [2022-06-13 Mo 17:09]--[2022-06-13 Mo 21:27] =>  4:18
      CLOCK: [2022-06-11 Sa 19:35]--[2022-06-11 Sa 22:50] =>  3:15

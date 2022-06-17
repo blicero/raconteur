@@ -2,13 +2,14 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 15. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-06-15 23:21:15 krylon>
+// Time-stamp: <2022-06-17 17:52:28 krylon>
 
 package ui
 
 import (
 	"fmt"
 	"os/exec"
+	"time"
 
 	"github.com/blicero/krylib"
 	"github.com/blicero/raconteur/db"
@@ -22,19 +23,25 @@ func (w *RWin) playerCreate() error {
 	defer fmt.Printf("[TRACE] EXIT %s\n",
 		krylib.TraceInfo())
 
-	if w.playerProc == nil {
-		w.playerProc = exec.Command(
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
+	if !w.playerActive {
+		var cmd = exec.Command(
 			playerPath,
 			"-no-fullscreen",
 			"-no-close-at-end",
 		)
 
-		if err := w.playerProc.Start(); err != nil {
+		if err := cmd.Start(); err != nil {
 			w.log.Printf("[ERROR] Cannot start player %s: %s\n",
 				playerPath,
 				err.Error())
 			return err
 		}
+
+		w.playerActive = true
+		go w.playerTimeout(cmd)
 
 		return nil
 	} else {
@@ -43,6 +50,21 @@ func (w *RWin) playerCreate() error {
 		return nil
 	}
 } // func (w *RWin) playerCreate() error
+
+func (w *RWin) playerTimeout(proc *exec.Cmd) {
+	var err error
+
+	time.Sleep(time.Second * 2)
+
+	if err = proc.Wait(); err != nil {
+		w.log.Printf("[ERROR] Player exited with error: %s\n",
+			err.Error())
+	}
+
+	w.lock.Lock()
+	w.playerActive = false
+	w.lock.Unlock()
+} // func (w *RWin) playerTimeout()
 
 func (w *RWin) playerPlayProgram(p *objects.Program) {
 	krylib.Trace()

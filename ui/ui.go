@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-15 22:52:09 krylon>
+// Time-stamp: <2022-06-17 20:53:41 krylon>
 
 package ui
 
@@ -11,7 +11,6 @@ import (
 	"log"
 	"math"
 	"net/url"
-	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -107,26 +106,26 @@ func createCol(title string, id int) (*gtk.TreeViewColumn, *gtk.CellRendererText
 // RWin is the user-facing part of the whole shebang.
 // nolint: structcheck,unused
 type RWin struct {
-	pool        *db.Pool
-	scanner     *scanner.Walker
-	ticker      *time.Ticker
-	lock        sync.RWMutex
-	log         *log.Logger
-	win         *gtk.Window
-	mainBox     *gtk.Box
-	searchBox   *gtk.Box
-	searchLbl   *gtk.Label
-	searchEntry *gtk.Entry
-	store       *gtk.TreeStore
-	view        *gtk.TreeView
-	scr         *gtk.ScrolledWindow
-	menu        *gtk.MenuBar
-	statusbar   *gtk.Statusbar
-	progs       map[int64]*gtk.TreeIter
-	fCache      map[int64]*objects.File
-	pCache      map[int64]*objects.Program
-	mbus        *dbus.Conn
-	playerProc  *exec.Cmd
+	pool         *db.Pool
+	scanner      *scanner.Walker
+	ticker       *time.Ticker
+	lock         sync.RWMutex
+	log          *log.Logger
+	win          *gtk.Window
+	mainBox      *gtk.Box
+	searchBox    *gtk.Box
+	searchLbl    *gtk.Label
+	searchEntry  *gtk.Entry
+	store        *gtk.TreeStore
+	view         *gtk.TreeView
+	scr          *gtk.ScrolledWindow
+	menu         *gtk.MenuBar
+	statusbar    *gtk.Statusbar
+	progs        map[int64]*gtk.TreeIter
+	fCache       map[int64]*objects.File
+	pCache       map[int64]*objects.Program
+	mbus         *dbus.Conn
+	playerActive bool
 }
 
 // Create creates a GUI. Who would've thought?
@@ -250,6 +249,25 @@ func Create() (*RWin, error) {
 
 	win.ticker = time.NewTicker(ckFileInterval)
 	glib.IdleAdd(win.ckFileQueue)
+
+	go win.registerSignal()
+	go func() {
+		var (
+			ex error
+			s  string
+		)
+
+		for {
+			time.Sleep(time.Second * 5)
+			if s, ex = win.getPlayerStatus(); ex != nil {
+				win.log.Printf("[ERROR] Cannot query player status: %s\n",
+					ex.Error())
+			} else {
+				win.log.Printf("[DEBUG] Player is %s\n", s)
+			}
+
+		}
+	}()
 
 	win.win.ShowAll()
 	win.win.SetSizeRequest(960, 540)

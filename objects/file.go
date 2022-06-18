@@ -2,11 +2,12 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-14 18:54:14 krylon>
+// Time-stamp: <2022-06-18 18:30:43 krylon>
 
 package objects
 
 import (
+	"net/url"
 	"path"
 	"path/filepath"
 	"time"
@@ -63,3 +64,9 @@ func (f *File) Clone() *File {
 func (f *File) GetParentFolder() string {
 	return filepath.Base(filepath.Dir(f.Path))
 } // func (f *File) GetParentFolder() string
+
+// PathURL returns the File's path as a file:// URL.
+// Intended for use with DBus interfaces
+func (f *File) PathURL() string {
+	return "file://" + url.PathEscape(f.Path)
+} // func (f *File) PathURL() string

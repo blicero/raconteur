@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-17 20:53:41 krylon>
+// Time-stamp: <2022-06-18 20:16:56 krylon>
 
 package ui
 
@@ -250,7 +250,6 @@ func Create() (*RWin, error) {
 	win.ticker = time.NewTicker(ckFileInterval)
 	glib.IdleAdd(win.ckFileQueue)
 
-	go win.registerSignal()
 	go func() {
 		var (
 			ex error
@@ -1330,7 +1329,11 @@ func (w *RWin) playProgram(p *objects.Program) {
 	if err = w.playerCreate(); err != nil {
 		w.log.Printf("[ERROR] Cannot start player: %s\n",
 			err.Error())
-	} else if err = w.playerClearPlaylist(); err != nil {
+	}
+
+	time.Sleep(time.Millisecond * 2000)
+
+	if err = w.playerClearPlaylist(); err != nil {
 		w.log.Printf("[ERROR] Cannot clear playlist: %s\n",
 			err.Error())
 	} else {

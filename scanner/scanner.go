@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-14 20:57:17 krylon>
+// Time-stamp: <2022-06-20 19:21:19 krylon>
 
 // Package scanner implements processing directory trees looking for files that,
 // allegedly, are podcast episodes, audio books, or parts of audio books.
@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sync"
+	"time"
 
 	"github.com/blicero/krylib"
 	"github.com/blicero/raconteur/common"
@@ -32,11 +33,12 @@ var suffixPattern = regexp.MustCompile("[.](?:mp3|m4[ab]|mpga|og[agm]|opus|wma|f
 
 // Walker implements traversing directory trees to find audio files.
 type Walker struct {
-	log   *log.Logger
-	lock  sync.Mutex
-	db    *db.Database
-	root  string
-	Files chan *objects.File
+	log    *log.Logger
+	lock   sync.Mutex
+	db     *db.Database
+	root   string
+	folder *objects.Folder
+	Files  chan *objects.File
 }
 
 // New creates a new Walker for the given folder.
@@ -69,7 +71,45 @@ func (w *Walker) Walk(root string) error {
 	w.root = root
 	defer func() { w.root = "" }()
 
-	return fs.WalkDir(os.DirFS(root), ".", w.visit)
+	var (
+		err    error
+		folder *objects.Folder
+	)
+
+	if folder, err = w.db.FolderGetByPath(root); err != nil {
+		w.log.Printf("[ERROR] Cannot look up Folder %s: %s\n",
+			root,
+			err.Error())
+		return err
+	} else if folder != nil {
+		w.folder = folder
+	} else {
+		folder = &objects.Folder{Path: root}
+		if err = w.db.FolderAdd(folder); err != nil {
+			w.log.Printf("[ERROR] Failed to add Folder %s to database: %s\n",
+				root,
+				err.Error())
+			return err
+		}
+
+		w.folder = folder
+	}
+
+	defer func() { w.folder = nil }()
+
+	if err = fs.WalkDir(os.DirFS(root), ".", w.visit); err != nil {
+		w.log.Printf("[ERROR] Error processing folder %q: %s\n",
+			root,
+			err.Error())
+		return err
+	} else if err = w.db.FolderUpdateScan(folder, time.Now()); err != nil {
+		w.log.Printf("[ERROR] Cannot update scan timestamp on folder %q: %s\n",
+			root,
+			err.Error())
+		return err
+	}
+
+	return nil
 } // func (w *Walker) Walk(root string) error
 
 func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
@@ -109,7 +149,8 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 		return nil
 	} else if f == nil {
 		f = &objects.File{
-			Path: fullPath,
+			Path:     fullPath,
+			FolderID: w.folder.ID,
 		}
 
 		if err = w.db.FileAdd(f); err != nil {
@@ -187,9 +228,9 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 
 FINISH_TX:
 	if txStatus {
-		w.db.Commit()
+		w.db.Commit() // nolint: errcheck
 	} else {
-		w.db.Rollback()
+		w.db.Rollback() // nolint: errcheck
 	}
 
 SEND_FILE:

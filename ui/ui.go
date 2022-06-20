@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-18 20:16:56 krylon>
+// Time-stamp: <2022-06-20 21:54:28 krylon>
 
 package ui
 
@@ -120,10 +120,12 @@ type RWin struct {
 	view         *gtk.TreeView
 	scr          *gtk.ScrolledWindow
 	menu         *gtk.MenuBar
+	dMenu        *gtk.Menu
 	statusbar    *gtk.Statusbar
 	progs        map[int64]*gtk.TreeIter
 	fCache       map[int64]*objects.File
 	pCache       map[int64]*objects.Program
+	dCache       map[int64]*objects.Folder
 	mbus         *dbus.Conn
 	playerActive bool
 }
@@ -186,6 +188,7 @@ func Create() (*RWin, error) {
 
 	win.fCache = make(map[int64]*objects.File)
 	win.pCache = make(map[int64]*objects.Program)
+	win.dCache = make(map[int64]*objects.Folder)
 
 	var typeList = make([]glib.Type, len(cols))
 
@@ -311,12 +314,23 @@ func (w *RWin) initializeTree() error {
 	//sel.SetMode(gtk.SELECTION_MULTIPLE)
 	sel.SetMode(gtk.SELECTION_SINGLE)
 
-	var plist []objects.Program
+	var (
+		plist []objects.Program
+		dlist []objects.Folder
+	)
 
 	if plist, err = d.ProgramGetAll(); err != nil {
 		w.log.Printf("[ERROR] Cannot load list of programs: %s\n",
 			err.Error())
 		return err
+	} else if dlist, err = d.FolderGetAll(); err != nil {
+		w.log.Printf("[ERROR] Cannot load list of Folders: %s\n",
+			err.Error())
+		return err
+	}
+
+	for _, f := range dlist {
+		w.dCache[f.ID] = f.Clone()
 	}
 
 	w.progs = make(map[int64]*gtk.TreeIter)
@@ -405,11 +419,11 @@ func (w *RWin) initializeTree() error {
 
 func (w *RWin) initializeMenu() error {
 	var (
-		err                error
-		fileMenu, progMenu *gtk.Menu
-		scanItem, quitItem *gtk.MenuItem
-		progAddItem        *gtk.MenuItem
-		fmItem, pmItem     *gtk.MenuItem
+		err                            error
+		fileMenu, progMenu, folderMenu *gtk.Menu
+		scanItem, quitItem             *gtk.MenuItem
+		progAddItem                    *gtk.MenuItem
+		fmItem, pmItem, dmItem         *gtk.MenuItem
 	)
 
 	if fileMenu, err = gtk.MenuNew(); err != nil {
@@ -418,6 +432,10 @@ func (w *RWin) initializeMenu() error {
 		return err
 	} else if progMenu, err = gtk.MenuNew(); err != nil {
 		w.log.Printf("[ERROR] Cannot create Program menu: %s\n",
+			err.Error())
+		return err
+	} else if folderMenu, err = gtk.MenuNew(); err != nil {
+		w.log.Printf("[ERROR] Cannot create Folder menu: %s\n",
 			err.Error())
 		return err
 	} else if scanItem, err = gtk.MenuItemNewWithMnemonic("_Scan Folder"); err != nil {
@@ -440,6 +458,42 @@ func (w *RWin) initializeMenu() error {
 		w.log.Printf("[ERROR] Cannot create menu item Program: %s\n",
 			err.Error())
 		return err
+	} else if dmItem, err = gtk.MenuItemNewWithMnemonic("_Directories"); err != nil {
+		w.log.Printf("[ERROR] Cannot create menu item Directories: %s\n",
+			err.Error())
+		return err
+	}
+
+	var (
+		conn    *db.Database
+		folders []objects.Folder
+	)
+
+	conn = w.pool.Get()
+	defer w.pool.Put(conn)
+
+	if folders, err = conn.FolderGetAll(); err != nil {
+		w.log.Printf("[ERROR] Cannot load all Folders: %s\n",
+			err.Error())
+		return err
+	}
+
+	for _, f := range folders {
+		var item *gtk.MenuItem
+
+		if item, err = gtk.MenuItemNewWithLabel(f.Path); err != nil {
+			w.log.Printf("[ERROR] Cannot create MenuItem for %q: %s\n",
+				f.Path,
+				err.Error())
+			return err
+		}
+
+		folderMenu.Append(item)
+
+		item.Connect("activate", func() {
+			w.statusbar.Push(666, fmt.Sprintf("Update %s", f.Path))
+			go w.scanner.Walk(f.Path)
+		})
 	}
 
 	// Handlers!
@@ -454,9 +508,12 @@ func (w *RWin) initializeMenu() error {
 
 	w.menu.Append(fmItem)
 	w.menu.Append(pmItem)
+	w.menu.Append(dmItem)
 
 	fmItem.SetSubmenu(fileMenu)
 	pmItem.SetSubmenu(progMenu)
+	dmItem.SetSubmenu(folderMenu)
+	w.dMenu = folderMenu
 
 	return nil
 } // func (w *RWin) initializeMenu() error
@@ -550,6 +607,29 @@ func (w *RWin) scanFolder() {
 		}
 
 		go w.scanner.Walk(path)
+		glib.TimeoutAdd(1000,
+			func() bool {
+				var (
+					ex   error
+					item *gtk.MenuItem
+				)
+
+				if item, ex = gtk.MenuItemNewWithLabel(path); ex != nil {
+					w.log.Printf("[ERROR] Cannot create MenuItem for %q: %s\n",
+						path,
+						ex.Error())
+					return false
+				}
+
+				item.Connect("activate", func() {
+					w.statusbar.Push(666, fmt.Sprintf("Update %s", path))
+					go w.scanner.Walk(path)
+				})
+
+				w.dMenu.Append(item)
+
+				return false
+			})
 	}
 } // func (w *RWin) scanFolder()
 
@@ -712,6 +792,10 @@ func (w *RWin) ckFileQueue() bool {
 		)
 
 		w.log.Printf("[DEBUG] Got file from queue: %s\n", f.Path)
+
+		if _, ok := w.fCache[f.ID]; ok {
+			return true
+		}
 
 		w.fCache[f.ID] = f
 

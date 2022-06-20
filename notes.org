@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-06-18 20:30:57 krylon>
+# Time-stamp: <2022-06-20 19:36:40 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -18,16 +18,17 @@ yet how that would factor in.
 * Clock
   Here I keep track of the time I waste on this futile effort.
   #+BEGIN: clocktable :scope file :maxlevel 202 :emphasize t
-  #+CAPTION: Clock summary at [2022-06-18 Sa 20:30]
+  #+CAPTION: Clock summary at [2022-06-20 Mo 19:36]
   | Headline                   | Time       |           |       |      |
   |----------------------------+------------+-----------+-------+------|
-  | *Total time*               | *2d 21:22* |           |       |      |
+  | *Total time*               | *2d 23:09* |           |       |      |
   |----------------------------+------------+-----------+-------+------|
-  | *Moving parts*             | *2d 21:22* |           |       |      |
+  | *Moving parts*             | *2d 23:09* |           |       |      |
   | \_  /Data types/           |            | /2:40/    |       |      |
   | \_  /Database/             |            | /7:25/    |       |      |
-  | \_  /Scanner/              |            | /5:20/    |       |      |
-  | \_    Metadata             |            |           |  3:30 |      |
+  | \_  /Scanner/              |            | /7:07/    |       |      |
+  | \_    Metadata             |            |           |  5:17 |      |
+  | \_      Monitor Folders    |            |           |       | 1:47 |
   | \_  /GUI/                  |            | /2d 5:57/ |       |      |
   | \_    Playback             |            |           | 14:48 |      |
   | \_    TreeView             |            |           |  9:09 |      |
@@ -63,6 +64,10 @@ yet how that would factor in.
     :END:
     I want to read and use metadata to automatically assign Files to Programs
     and to automatically set the title.
+**** TODO Monitor Folders
+     :LOGBOOK:
+     CLOCK: [2022-06-20 Mo 17:49]--[2022-06-20 Mo 19:36] =>  1:47
+     :END:
 ** GUI
    :LOGBOOK:
    CLOCK: [2022-06-11 Sa 16:35]--[2022-06-11 Sa 17:57] =>  1:22

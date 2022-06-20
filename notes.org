@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-06-20 22:46:13 krylon>
+# Time-stamp: <2022-06-20 22:50:36 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -18,7 +18,7 @@ yet how that would factor in.
 * Clock
   Here I keep track of the time I waste on this futile effort.
   #+BEGIN: clocktable :scope file :maxlevel 202 :emphasize t
-  #+CAPTION: Clock summary at [2022-06-20 Mo 22:46]
+  #+CAPTION: Clock summary at [2022-06-20 Mo 22:50]
   | Headline                   | Time      |           |       |      |
   |----------------------------+-----------+-----------+-------+------|
   | *Total time*               | *3d 2:07* |           |       |      |
@@ -57,14 +57,16 @@ yet how that would factor in.
    CLOCK: [2021-09-07 Di 20:36]--[2021-09-07 Di 22:26] =>  1:50
    :END:
    Scanner walks directory trees looking for audio files. Roughly speaking.
-*** TODO Metadata
+*** DONE Metadata
+    CLOSED: [2022-06-20 Mo 22:50]
     :LOGBOOK:
     CLOCK: [2022-06-14 Di 18:18]--[2022-06-14 Di 21:16] =>  2:58
     CLOCK: [2022-06-14 Di 17:45]--[2022-06-14 Di 18:17] =>  0:32
     :END:
     I want to read and use metadata to automatically assign Files to Programs
     and to automatically set the title.
-**** IMPLEMENT Monitor Folders
+**** DONE Monitor Folders
+     CLOSED: [2022-06-20 Mo 22:50]
      :LOGBOOK:
      CLOCK: [2022-06-20 Mo 22:05]--[2022-06-20 Mo 22:46] =>  0:41
      CLOCK: [2022-06-20 Mo 19:42]--[2022-06-20 Mo 21:59] =>  2:17

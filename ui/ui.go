@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-20 21:54:28 krylon>
+// Time-stamp: <2022-06-20 22:28:41 krylon>
 
 package ui
 
@@ -27,8 +27,12 @@ import (
 	"github.com/gotk3/gotk3/gtk"
 )
 
+// rescanInterval is set to a very low value intentionally for purposes
+// of development/testing/debugging. Once I've done that, I should set it
+// to a more reasonable value, say 30 or 60 minutes.
 const (
 	ckFileInterval = time.Millisecond * 25
+	rescanInterval = time.Second * 30
 )
 
 // type tabContent struct {
@@ -252,6 +256,7 @@ func Create() (*RWin, error) {
 
 	win.ticker = time.NewTicker(ckFileInterval)
 	glib.IdleAdd(win.ckFileQueue)
+	glib.TimeoutAdd(uint(rescanInterval.Milliseconds()), win.refreshFolders)
 
 	go func() {
 		var (
@@ -1601,6 +1606,36 @@ func (w *RWin) getPidFid(iter *gtk.TreeIter) (int64, int64, error) {
 
 	return pid, fid, nil
 } // func (w *RWin) getPidFid(iter *gtk.TreeIter) (int64, int64, error)
+
+func (w *RWin) refreshFolders() bool {
+	var (
+		err     error
+		c       *db.Database
+		folders []objects.Folder
+	)
+
+	w.log.Printf("[TRACE] Checking if folders need to be re-scanned.\n")
+
+	c = w.pool.Get()
+	defer w.pool.Put(c)
+
+	if folders, err = c.FolderGetAll(); err != nil {
+		w.log.Printf("[ERROR] Cannot load list of Folders: %s\n",
+			err.Error())
+		return true
+	}
+
+	for _, f := range folders {
+		var d = f.SinceLastScan()
+		if d > rescanInterval {
+			w.log.Printf("[DEBUG] Re-scanning folder %s\n",
+				f.Path)
+			go w.scanner.Walk(f.Path)
+		}
+	}
+
+	return true
+} // func (w *RWin) refreshFolders() bool
 
 func abs(n int64) int64 {
 	if n == math.MinInt32 {

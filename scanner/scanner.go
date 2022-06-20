@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-20 21:51:14 krylon>
+// Time-stamp: <2022-06-20 22:20:23 krylon>
 
 // Package scanner implements processing directory trees looking for files that,
 // allegedly, are podcast episodes, audio books, or parts of audio books.
@@ -62,11 +62,11 @@ func New(conn *db.Database) (*Walker, error) {
 
 // Walk initiates the traversal of the Walker's directory tree.
 func (w *Walker) Walk(root string) error {
-	w.log.Printf("[INFO] Scan %s\n", root)
-	defer w.log.Printf("[INFO] Done scanning %s\n", root)
-
 	w.lock.Lock()
 	defer w.lock.Unlock()
+
+	w.log.Printf("[INFO] Scan %s\n", root)
+	defer w.log.Printf("[INFO] Done scanning %s\n", root)
 
 	w.root = root
 	defer func() { w.root = "" }()

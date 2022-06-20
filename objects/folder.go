@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 20. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-06-20 19:45:26 krylon>
+// Time-stamp: <2022-06-20 22:26:16 krylon>
 
 package objects
 
@@ -22,3 +22,9 @@ func (f *Folder) Clone() *Folder {
 		LastScan: f.LastScan,
 	}
 } // func (f *Folder) Clone() *Folder
+
+// SinceLastScan returns the amount of time that has passed
+// since the Folder was last scanned.
+func (f *Folder) SinceLastScan() time.Duration {
+	return time.Since(f.LastScan)
+} // func (f *Folder) SinceLastScan() time.Duration

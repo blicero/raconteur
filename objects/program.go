@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-09 19:14:33 krylon>
+// Time-stamp: <2022-06-20 21:39:00 krylon>
 
 package objects
 
@@ -27,6 +27,7 @@ func (p *Program) URLString() string {
 	return ""
 } // func (p *Program) URLString() string
 
+// Clone return a pointer to a freshly-allocated memberwise copy of the receiver.
 func (p *Program) Clone() *Program {
 	return &Program{
 		ID:      p.ID,

@@ -262,8 +262,8 @@ func Create() (*RWin, error) {
 		for {
 			time.Sleep(time.Second * 5)
 			if s, ex = win.getPlayerStatus(); ex != nil {
-				win.log.Printf("[ERROR] Cannot query player status: %s\n",
-					ex.Error())
+				// win.log.Printf("[ERROR] Cannot query player status: %s\n",
+				// 	ex.Error())
 			} else {
 				win.log.Printf("[DEBUG] Player is %s\n", s)
 			}

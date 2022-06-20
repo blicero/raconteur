@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 15. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-06-18 20:27:03 krylon>
+// Time-stamp: <2022-06-20 22:28:14 krylon>
 
 package ui
 
@@ -38,8 +38,8 @@ func (w *RWin) getPlayerStatus() (string, error) {
 	)
 
 	if val, err = obj.GetProperty("org.mpris.MediaPlayer2.Player.PlaybackStatus"); err != nil {
-		w.log.Printf("[ERROR] Cannot get player status: %s\n",
-			err.Error())
+		// w.log.Printf("[ERROR] Cannot get player status: %s\n",
+		// 	err.Error())
 		return "", err
 	}
 

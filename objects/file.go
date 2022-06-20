@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-18 18:30:43 krylon>
+// Time-stamp: <2022-06-20 18:07:00 krylon>
 
 package objects
 
@@ -17,6 +17,7 @@ import (
 type File struct {
 	ID         int64
 	ProgramID  int64
+	FolderID   int64
 	Path       string
 	Title      string
 	URL        string

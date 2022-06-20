@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-15 19:31:35 krylon>
+// Time-stamp: <2022-06-20 17:52:10 krylon>
 
 package db
 
@@ -27,12 +27,16 @@ CREATE TABLE program (
 CREATE TABLE file (
     id                   INTEGER PRIMARY KEY,
     program_id           INTEGER,
+    folder_id            INTEGER NOT NULL,
     path                 TEXT UNIQUE NOT NULL,
     title                TEXT NOT NULL DEFAULT '',
     position             INTEGER NOT NULL DEFAULT 0,
     last_played          INTEGER NOT NULL DEFAULT 0,
     url                  TEXT,
     FOREIGN KEY (program_id) REFERENCES program (id)
+        ON DELETE CASCADE
+        ON UPDATE RESTRICT,
+    FOREIGN KEY (folder_id) REFERENCES folder (id)
         ON DELETE CASCADE
         ON UPDATE RESTRICT
 )

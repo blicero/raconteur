@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 08. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-14 21:00:50 krylon>
+// Time-stamp: <2022-06-20 18:56:57 krylon>
 
 // Package db provides a wrapper around the actual database connection.
 package db
@@ -1123,7 +1123,7 @@ func (db *Database) FileAdd(f *objects.File) error {
 	var res sql.Result
 
 EXEC_QUERY:
-	if res, err = stmt.Exec(f.Path); err != nil {
+	if res, err = stmt.Exec(f.Path, f.FolderID); err != nil {
 		if worthARetry(err) {
 			waitForRetry()
 			goto EXEC_QUERY
@@ -1255,7 +1255,7 @@ EXEC_QUERY:
 			f     = &objects.File{ID: id}
 		)
 
-		if err = rows.Scan(&f.ProgramID, &f.Path, &f.Title, &f.Position, &stamp); err != nil {
+		if err = rows.Scan(&f.ProgramID, &f.FolderID, &f.Path, &f.Title, &f.Position, &stamp); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
 			return nil, err
 		}
@@ -1305,7 +1305,7 @@ EXEC_QUERY:
 			f     = &objects.File{Path: path}
 		)
 
-		if err = rows.Scan(&f.ID, &f.ProgramID, &f.Title, &f.Position, &stamp); err != nil {
+		if err = rows.Scan(&f.ID, &f.ProgramID, &f.FolderID, &f.Title, &f.Position, &stamp); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
 			return nil, err
 		}
@@ -1359,6 +1359,7 @@ EXEC_QUERY:
 
 		if err = rows.Scan(
 			&f.ID,
+			&f.FolderID,
 			&f.Path,
 			&f.Title,
 			&f.Position,
@@ -1416,6 +1417,7 @@ EXEC_QUERY:
 
 		if err = rows.Scan(
 			&f.ID,
+			&f.FolderID,
 			&f.Path,
 			&f.Title,
 			&f.Position,
@@ -1657,3 +1659,297 @@ EXEC_QUERY:
 	}
 	return nil
 } // func (db *Database) FileSetProgram(f *objects.File, p *objects.Program) error
+
+// FolderAdd adds a new Folder to the database.
+func (db *Database) FolderAdd(f *objects.Folder) error {
+	const qid query.ID = query.FolderAdd
+	var (
+		err    error
+		msg    string
+		stmt   *sql.Stmt
+		tx     *sql.Tx
+		status bool
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid.String(),
+			err.Error())
+		return err
+	} else if db.tx != nil {
+		tx = db.tx
+	} else {
+	BEGIN_AD_HOC:
+		if tx, err = db.db.Begin(); err != nil {
+			if worthARetry(err) {
+				waitForRetry()
+				goto BEGIN_AD_HOC
+			} else {
+				msg = fmt.Sprintf("Error starting transaction: %s\n",
+					err.Error())
+				db.log.Printf("[ERROR] %s\n", msg)
+				return errors.New(msg)
+			}
+
+		} else {
+			defer func() {
+				var err2 error
+				if status {
+					if err2 = tx.Commit(); err2 != nil {
+						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
+							err2.Error())
+					}
+				} else if err2 = tx.Rollback(); err2 != nil {
+					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
+						err2.Error())
+				}
+			}()
+		}
+	}
+
+	stmt = tx.Stmt(stmt)
+	var res sql.Result
+
+EXEC_QUERY:
+	if res, err = stmt.Exec(f.Path); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		} else {
+			err = fmt.Errorf("Cannot add Program %s to database: %s",
+				f.Path,
+				err.Error())
+			db.log.Printf("[ERROR] %s\n", err.Error())
+			return err
+		}
+	} else {
+		var folderID int64
+
+		if folderID, err = res.LastInsertId(); err != nil {
+			db.log.Printf("[ERROR] Cannot get ID of new Program %s: %s\n",
+				f.Path,
+				err.Error())
+			return err
+		}
+
+		status = true
+		f.ID = folderID
+		return nil
+	}
+} // func (db *Database) FolderAdd(f *objects.Folder) error
+
+// FolderUpdateScan updates a Folder's last_scan timestamp.
+func (db *Database) FolderUpdateScan(f *objects.Folder, t time.Time) error {
+	const qid query.ID = query.FolderUpdateScan
+	var (
+		err    error
+		msg    string
+		stmt   *sql.Stmt
+		tx     *sql.Tx
+		status bool
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid.String(),
+			err.Error())
+		return err
+	} else if db.tx != nil {
+		tx = db.tx
+	} else {
+	BEGIN_AD_HOC:
+		if tx, err = db.db.Begin(); err != nil {
+			if worthARetry(err) {
+				waitForRetry()
+				goto BEGIN_AD_HOC
+			} else {
+				msg = fmt.Sprintf("Error starting transaction: %s\n",
+					err.Error())
+				db.log.Printf("[ERROR] %s\n", msg)
+				return errors.New(msg)
+			}
+
+		} else {
+			defer func() {
+				var err2 error
+				if status {
+					if err2 = tx.Commit(); err2 != nil {
+						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
+							err2.Error())
+					}
+				} else if err2 = tx.Rollback(); err2 != nil {
+					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
+						err2.Error())
+				}
+			}()
+		}
+	}
+
+	stmt = tx.Stmt(stmt)
+
+EXEC_QUERY:
+	if _, err = stmt.Exec(t.Unix(), f.ID); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		} else {
+			err = fmt.Errorf("Cannot add Program %s to database: %s",
+				f.Path,
+				err.Error())
+			db.log.Printf("[ERROR] %s\n", err.Error())
+			return err
+		}
+	} else {
+		status = true
+		f.LastScan = t
+		return nil
+	}
+} // func (db *Database) FolderUpdateScan(f *objects.Folder, t time.Time) error
+
+func (db *Database) FolderGetByPath(path string) (*objects.Folder, error) {
+	const qid query.ID = query.FolderGetByPath
+	var (
+		err  error
+		stmt *sql.Stmt
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid,
+			err.Error())
+		return nil, err
+	} else if db.tx != nil {
+		stmt = db.tx.Stmt(stmt)
+	}
+
+	var rows *sql.Rows
+
+EXEC_QUERY:
+	if rows, err = stmt.Query(path); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		}
+
+		return nil, err
+	}
+
+	defer rows.Close() // nolint: errcheck,gosec
+
+	if rows.Next() {
+		var (
+			stamp int64
+			f     = &objects.Folder{Path: path}
+		)
+
+		if err = rows.Scan(&f.ID, &stamp); err != nil {
+			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
+			return nil, err
+		}
+
+		f.LastScan = time.Unix(stamp, 0)
+
+		return f, nil
+	}
+
+	return nil, nil
+} // func (db *Database) FolderGetByPath(path string) (*objects.Folder, error)
+
+func (db *Database) FolderGetByID(id int64) (*objects.Folder, error) {
+	const qid query.ID = query.FolderGetByID
+	var (
+		err  error
+		stmt *sql.Stmt
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid,
+			err.Error())
+		return nil, err
+	} else if db.tx != nil {
+		stmt = db.tx.Stmt(stmt)
+	}
+
+	var rows *sql.Rows
+
+EXEC_QUERY:
+	if rows, err = stmt.Query(id); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		}
+
+		return nil, err
+	}
+
+	defer rows.Close() // nolint: errcheck,gosec
+
+	if rows.Next() {
+		var (
+			stamp int64
+			f     = &objects.Folder{ID: id}
+		)
+
+		if err = rows.Scan(&f.Path, &stamp); err != nil {
+			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
+			return nil, err
+		}
+
+		f.LastScan = time.Unix(stamp, 0)
+
+		return f, nil
+	}
+
+	return nil, nil
+} // func (db *Database) FolderGetByID(id int64) (*objects.Folder, error)
+
+func (db *Database) FolderGetAll() ([]objects.Folder, error) {
+	const qid query.ID = query.FolderGetAll
+	var (
+		err  error
+		stmt *sql.Stmt
+	)
+
+	if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid,
+			err.Error())
+		return nil, err
+	} else if db.tx != nil {
+		stmt = db.tx.Stmt(stmt)
+	}
+
+	var rows *sql.Rows
+
+EXEC_QUERY:
+	if rows, err = stmt.Query(); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		}
+
+		return nil, err
+	}
+
+	defer rows.Close() // nolint: errcheck,gosec
+
+	var folders = make([]objects.Folder, 0, 4)
+
+	for rows.Next() {
+		var (
+			stamp int64
+			f     objects.Folder
+		)
+
+		if err = rows.Scan(&f.ID, &f.Path, &stamp); err != nil {
+			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
+			return nil, err
+		}
+
+		f.LastScan = time.Unix(stamp, 0)
+		folders = append(folders, f)
+	}
+
+	return folders, nil
+} // func (db *Database) FolderGetAll() ([]objects.Folder, error)

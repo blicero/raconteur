@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-20 19:21:19 krylon>
+// Time-stamp: <2022-06-20 21:51:14 krylon>
 
 // Package scanner implements processing directory trees looking for files that,
 // allegedly, are podcast episodes, audio books, or parts of audio books.
@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	minSize = 8 * 1024 * 1024 // 8 MiB
+	minSize = 2 * 1024 * 1024 // 2 MiB
 )
 
 var suffixPattern = regexp.MustCompile("[.](?:mp3|m4[ab]|mpga|og[agm]|opus|wma|flac)$")

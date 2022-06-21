@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-20 22:28:41 krylon>
+// Time-stamp: <2022-06-21 22:40:41 krylon>
 
 package ui
 
@@ -917,7 +917,9 @@ func (w *RWin) handleFileListClick(view *gtk.TreeView, evt *gdk.Event) {
 		}
 	})
 
-	if len(iters) == 1 {
+	if len(iters) == 0 {
+		return
+	} else if len(iters) == 1 {
 		iter = iters[0]
 
 		var title string = col.GetTitle()
@@ -973,6 +975,8 @@ func (w *RWin) mkContextMenuProgram(iter *gtk.TreeIter, pid int64) (*gtk.Menu, e
 		p                  *objects.Program
 	)
 
+	w.log.Printf("[TRACE] Make Context Menu for Program %d\n", pid)
+
 	c = w.pool.Get()
 	defer w.pool.Put(c)
 
@@ -981,6 +985,9 @@ func (w *RWin) mkContextMenuProgram(iter *gtk.TreeIter, pid int64) (*gtk.Menu, e
 			pid,
 			err.Error())
 		return nil, err
+	} else if p == nil {
+		w.log.Printf("[ERROR] Cannot find Program #%d in database!\n", pid)
+		return nil, fmt.Errorf("Program ID %d was not found in database", pid)
 	} else if menu, err = gtk.MenuNew(); err != nil {
 		w.log.Printf("[ERROR] Cannot create Menu: %s\n",
 			err.Error())

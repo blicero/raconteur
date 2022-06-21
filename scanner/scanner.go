@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-20 22:20:23 krylon>
+// Time-stamp: <2022-06-21 22:20:49 krylon>
 
 // Package scanner implements processing directory trees looking for files that,
 // allegedly, are podcast episodes, audio books, or parts of audio books.
@@ -25,27 +25,31 @@ import (
 	"github.com/blicero/raconteur/objects"
 )
 
+// minSize is the minimum file size required to process files.
+// Files smaller than minSize are ignored.
 const (
-	minSize = 2 * 1024 * 1024 // 2 MiB
+	minSize = 100 * 1024 // 100 KiB
 )
 
 var suffixPattern = regexp.MustCompile("[.](?:mp3|m4[ab]|mpga|og[agm]|opus|wma|flac)$")
 
 // Walker implements traversing directory trees to find audio files.
 type Walker struct {
-	log    *log.Logger
-	lock   sync.Mutex
-	db     *db.Database
-	root   string
-	folder *objects.Folder
-	Files  chan *objects.File
+	log       *log.Logger
+	lock      sync.Mutex
+	db        *db.Database
+	root      string
+	folder    *objects.Folder
+	skipCache map[string]bool
+	Files     chan *objects.File
 }
 
 // New creates a new Walker for the given folder.
 func New(conn *db.Database) (*Walker, error) {
 	var w = &Walker{
-		db:    conn,
-		Files: make(chan *objects.File, 8),
+		db:        conn,
+		Files:     make(chan *objects.File, 8),
+		skipCache: make(map[string]bool),
 	}
 	var err error
 
@@ -131,13 +135,15 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 		fullPath = filepath.Join(w.root, path)
 	)
 
-	w.log.Printf("[DEBUG] Process %s\n", fullPath)
-
-	if !suffixPattern.MatchString(path) {
+	if w.skipCache[path] {
+		return nil
+	} else if !suffixPattern.MatchString(path) {
+		w.skipCache[path] = true
 		return nil
 	} else if info, err = d.Info(); err != nil {
 		return err
 	} else if info.Size() < minSize {
+		w.skipCache[path] = true
 		w.log.Printf("[DEBUG] %s is too small (%s)\n",
 			fullPath,
 			krylib.FmtBytes(info.Size()))
@@ -146,6 +152,9 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 		w.log.Printf("[ERROR] Failed to look up file %s: %s\n",
 			fullPath,
 			err.Error())
+		return nil
+	} else if f != nil {
+		w.skipCache[path] = true
 		return nil
 	} else if f == nil {
 		f = &objects.File{
@@ -159,6 +168,9 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 				err.Error())
 			return err
 		}
+
+		w.log.Printf("[DEBUG] Process %s\n", fullPath)
+		w.skipCache[path] = true
 	}
 
 	var (

@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-06-21 23:03:51 krylon>
+# Time-stamp: <2022-06-21 23:06:54 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -90,7 +90,7 @@ yet how that would factor in.
    Like I said, we're going to use gotk3, the Go bindings to Gtk3. I think
    Gtk4 is a thing, but ... whatever, I'm still slightly annoyed I cannot just
    use Gtk2, although the changes seem to not be that drastic.
-*** TODO Playback
+*** IMPLEMENT Playback
     :LOGBOOK:
     CLOCK: [2022-06-21 Di 19:57]--[2022-06-21 Di 23:00] =>  3:03
     CLOCK: [2022-06-21 Di 19:20]--[2022-06-21 Di 19:40] =>  0:20

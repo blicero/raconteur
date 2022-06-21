@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 02. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-05-30 20:45:03 krylon>
+// Time-stamp: <2022-06-21 20:04:38 krylon>
 
 // +build ignore
 
@@ -104,6 +104,7 @@ func main() {
 		stepsRaw              string
 		steps                 map[string]bool
 		stepList              []string
+		raceDetect            bool
 		lvlString             = make([]string, len(logLevels))
 	)
 
@@ -125,6 +126,7 @@ always be performed in the following order:
 %s
 For the brevity, the single value "all" will perform all steps except clean.
 This flag is not case-sensitive.`, strings.Join(orderedSteps, ", ")))
+	flag.BoolVar(&raceDetect, "race", false, "Build with race detector enabled")
 
 	flag.Parse()
 
@@ -240,10 +242,12 @@ This flag is not case-sensitive.`, strings.Join(orderedSteps, ", ")))
 		// var cmd = exec.Command("go", "build", "-v", "-p", sWorkerCnt)
 		// The -tags flag is required so the build will succeed on Debian.
 		var args = []string{"build", "-v", "-tags", "pango_1_42,gtk_3_22", "-p", sWorkerCnt}
-		// var args = []string{"build", "-v", "-p", sWorkerCnt}
-		// if (runtime.GOOS == "linux" || runtime.GOOS == "freebsd") && runtime.GOARCH == "amd64" {
-		// 	args = append(args, "-race")
-		// }
+
+		if raceDetect && ((runtime.GOOS == "linux" || runtime.GOOS == "freebsd") && runtime.GOARCH == "amd64") {
+			dbg.Println("[INFO] Building with race detection enabled.")
+			args = append(args, "-race")
+		}
+
 		var cmd = exec.Command("go", args...)
 		if output, err = cmd.CombinedOutput(); err != nil {
 			dbg.Printf("[ERROR] Error building raconteur: %s\n%s\n",

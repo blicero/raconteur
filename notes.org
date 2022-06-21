@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-06-20 22:50:36 krylon>
+# Time-stamp: <2022-06-21 23:03:51 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -18,19 +18,19 @@ yet how that would factor in.
 * Clock
   Here I keep track of the time I waste on this futile effort.
   #+BEGIN: clocktable :scope file :maxlevel 202 :emphasize t
-  #+CAPTION: Clock summary at [2022-06-20 Mo 22:50]
+  #+CAPTION: Clock summary at [2022-06-21 Di 23:03]
   | Headline                   | Time      |           |       |      |
   |----------------------------+-----------+-----------+-------+------|
-  | *Total time*               | *3d 2:07* |           |       |      |
+  | *Total time*               | *3d 4:20* |           |       |      |
   |----------------------------+-----------+-----------+-------+------|
-  | *Moving parts*             | *3d 2:07* |           |       |      |
+  | *Moving parts*             | *3d 4:20* |           |       |      |
   | \_  /Data types/           |           | /2:40/    |       |      |
   | \_  /Database/             |           | /7:25/    |       |      |
   | \_  /Scanner/              |           | /10:05/   |       |      |
   | \_    Metadata             |           |           |  8:15 |      |
   | \_      Monitor Folders    |           |           |       | 4:45 |
-  | \_  /GUI/                  |           | /2d 5:57/ |       |      |
-  | \_    Playback             |           |           | 14:48 |      |
+  | \_  /GUI/                  |           | /2d 8:10/ |       |      |
+  | \_    Playback             |           |           | 17:01 |      |
   | \_    TreeView             |           |           |  9:09 |      |
   | \_      Multiple Selection |           |           |       | 7:33 |
   | \_      Sorting            |           |           |       | 1:36 |
@@ -92,7 +92,9 @@ yet how that would factor in.
    use Gtk2, although the changes seem to not be that drastic.
 *** TODO Playback
     :LOGBOOK:
-    CLOCK: [2022-06-18 Sa 18:06]--[2022-06-18 Sa 20:30] =>  2:24
+    CLOCK: [2022-06-21 Di 19:57]--[2022-06-21 Di 23:00] =>  3:03
+    CLOCK: [2022-06-21 Di 19:20]--[2022-06-21 Di 19:40] =>  0:20
+    CLOCK: [2022-06-18 Sa 18:06]--[2022-06-18 Sa 19:20] =>  1:14
     CLOCK: [2022-06-17 Fr 17:32]--[2022-06-18 Sa 00:12] =>  6:40
     CLOCK: [2022-06-15 Mi 18:40]--[2022-06-15 Mi 23:53] =>  5:13
     CLOCK: [2022-06-14 Di 21:56]--[2022-06-14 Di 22:27] =>  0:31

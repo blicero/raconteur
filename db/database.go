@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 08. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-20 18:56:57 krylon>
+// Time-stamp: <2022-06-23 19:33:39 krylon>
 
 // Package db provides a wrapper around the actual database connection.
 package db
@@ -753,7 +753,7 @@ EXEC_QUERY:
 			waitForRetry()
 			goto EXEC_QUERY
 		} else {
-			err = fmt.Errorf("Cannot set title for Program %q to %q: %s\n",
+			err = fmt.Errorf("Cannot set title for Program %q to %q: %s",
 				p.Title,
 				t,
 				err.Error())
@@ -822,7 +822,7 @@ EXEC_QUERY:
 			waitForRetry()
 			goto EXEC_QUERY
 		} else {
-			err = fmt.Errorf("Cannot set Creator for Program %q to %q: %s\n",
+			err = fmt.Errorf("Cannot set Creator for Program %q to %q: %s",
 				p.Title,
 				c,
 				err.Error())
@@ -899,7 +899,7 @@ EXEC_QUERY:
 			waitForRetry()
 			goto EXEC_QUERY
 		} else {
-			err = fmt.Errorf("Cannot update URL for Program %q to %q: %s\n",
+			err = fmt.Errorf("Cannot update URL for Program %q to %q: %s",
 				p.Title,
 				s,
 				err.Error())
@@ -966,6 +966,8 @@ EXEC_QUERY:
 	return nil, nil
 } // func (db *Database) ProgramGetByID(id int64) (*objects.Program, error)
 
+// ProgramGetByTitle looks up a Program by its Title. Returns nil, if no
+// such program is found. The title has to be an exact, case-sensitivity and all.
 func (db *Database) ProgramGetByTitle(title string) (*objects.Program, error) {
 	const qid query.ID = query.ProgramGetByTitle
 	var (
@@ -1505,7 +1507,7 @@ EXEC_QUERY:
 } // func (db *Database) FileSetTitle(f *objects.File, title string) error
 
 // FileSetPosition sets the playback position of a File.
-func (db *Database) FileSetPosition(f *objects.File, pos int) error {
+func (db *Database) FileSetPosition(f *objects.File, pos int64) error {
 	const qid query.ID = query.FileSetPosition
 	var (
 		err    error
@@ -1572,7 +1574,7 @@ EXEC_QUERY:
 	status = true
 	f.Position = pos
 	return nil
-} // func (db *Database) FileSetPosition(f *objects.File, pos int) error
+} // func (db *Database) FileSetPosition(f *objects.File, pos int64) error
 
 // FileSetProgram sets a File's ProgramID to the one of the given Program.
 func (db *Database) FileSetProgram(f *objects.File, p *objects.Program) error {
@@ -1806,6 +1808,7 @@ EXEC_QUERY:
 	}
 } // func (db *Database) FolderUpdateScan(f *objects.Folder, t time.Time) error
 
+// FolderGetByPath looks up a Folder by its Path.
 func (db *Database) FolderGetByPath(path string) (*objects.Folder, error) {
 	const qid query.ID = query.FolderGetByPath
 	var (
@@ -1855,6 +1858,7 @@ EXEC_QUERY:
 	return nil, nil
 } // func (db *Database) FolderGetByPath(path string) (*objects.Folder, error)
 
+// FolderGetByID looks up a Folder by its ID
 func (db *Database) FolderGetByID(id int64) (*objects.Folder, error) {
 	const qid query.ID = query.FolderGetByID
 	var (
@@ -1904,6 +1908,7 @@ EXEC_QUERY:
 	return nil, nil
 } // func (db *Database) FolderGetByID(id int64) (*objects.Folder, error)
 
+// FolderGetAll return all Folders from the database.
 func (db *Database) FolderGetAll() ([]objects.Folder, error) {
 	const qid query.ID = query.FolderGetAll
 	var (

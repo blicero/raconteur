@@ -2,12 +2,13 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 20. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-06-20 22:26:16 krylon>
+// Time-stamp: <2022-06-23 19:30:52 krylon>
 
 package objects
 
 import "time"
 
+// Folder represents the root of a directory tree where audio files are stored.
 type Folder struct {
 	ID       int64
 	Path     string

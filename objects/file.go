@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-20 18:07:00 krylon>
+// Time-stamp: <2022-06-23 19:30:20 krylon>
 
 package objects
 
@@ -22,7 +22,7 @@ type File struct {
 	Title      string
 	URL        string
 	Order      []int
-	Position   int
+	Position   int64
 	LastPlayed time.Time
 }
 
@@ -30,9 +30,9 @@ type File struct {
 func (f *File) DisplayTitle() string {
 	if f.Title != "" {
 		return f.Title
-	} else {
-		return path.Base(f.Path)
 	}
+
+	return path.Base(f.Path)
 } // func (f *File) DisplayTitle() string
 
 // Duration returns the duration of a File.

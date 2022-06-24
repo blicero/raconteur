@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-21 22:40:41 krylon>
+// Time-stamp: <2022-06-24 20:41:03 krylon>
 
 package ui
 
@@ -348,8 +348,8 @@ func (w *RWin) initializeTree() error {
 
 		w.pCache[p.ID] = p.Clone()
 		w.progs[p.ID] = piter
-		w.store.SetValue(piter, 0, p.ID)
-		w.store.SetValue(piter, 1, p.Title)
+		w.store.SetValue(piter, 0, p.ID)    // nolint: errcheck
+		w.store.SetValue(piter, 1, p.Title) // nolint: errcheck
 
 		if flist, err = d.FileGetByProgram(&p); err != nil {
 			w.log.Printf("[ERROR] Cannot get Files for Program %q: %s\n",
@@ -373,11 +373,11 @@ func (w *RWin) initializeTree() error {
 				continue
 			}
 
-			w.store.SetValue(fiter, 0, -f.ProgramID)
-			w.store.SetValue(fiter, 2, f.ID)
-			w.store.SetValue(fiter, 3, f.DisplayTitle())
-			w.store.SetValue(fiter, 4, 0)
-			w.store.SetValue(fiter, 5, dur.String())
+			w.store.SetValue(fiter, 0, -f.ProgramID)     // nolint: errcheck
+			w.store.SetValue(fiter, 2, f.ID)             // nolint: errcheck
+			w.store.SetValue(fiter, 3, f.DisplayTitle()) // nolint: errcheck
+			w.store.SetValue(fiter, 4, 0)                // nolint: errcheck
+			w.store.SetValue(fiter, 5, dur.String())     // nolint: errcheck
 		}
 	}
 
@@ -394,8 +394,8 @@ func (w *RWin) initializeTree() error {
 
 	piter = w.store.Prepend(nil)
 	w.progs[0] = piter
-	w.store.SetValue(piter, 0, 0)
-	w.store.SetValue(piter, 1, "---")
+	w.store.SetValue(piter, 0, 0)     // nolint: errcheck
+	w.store.SetValue(piter, 1, "---") // nolint: errcheck
 
 	for _, f := range flist {
 		var (
@@ -412,11 +412,11 @@ func (w *RWin) initializeTree() error {
 			continue
 		}
 
-		w.store.SetValue(fiter, 0, math.MinInt32)
-		w.store.SetValue(fiter, 2, f.ID)
-		w.store.SetValue(fiter, 3, f.DisplayTitle())
-		w.store.SetValue(fiter, 4, 0)
-		w.store.SetValue(fiter, 5, dur.String())
+		w.store.SetValue(fiter, 0, math.MinInt32)    // nolint: errcheck
+		w.store.SetValue(fiter, 2, f.ID)             // nolint: errcheck
+		w.store.SetValue(fiter, 3, f.DisplayTitle()) // nolint: errcheck
+		w.store.SetValue(fiter, 4, 0)                // nolint: errcheck
+		w.store.SetValue(fiter, 5, dur.String())     // nolint: errcheck
 	}
 
 	return nil
@@ -497,7 +497,7 @@ func (w *RWin) initializeMenu() error {
 
 		item.Connect("activate", func() {
 			w.statusbar.Push(666, fmt.Sprintf("Update %s", f.Path))
-			go w.scanner.Walk(f.Path)
+			go w.scanner.Walk(f.Path) // nolint: errcheck
 		})
 	}
 
@@ -611,7 +611,7 @@ func (w *RWin) scanFolder() {
 			return
 		}
 
-		go w.scanner.Walk(path)
+		go w.scanner.Walk(path) // nolint: errcheck
 		glib.TimeoutAdd(1000,
 			func() bool {
 				var (
@@ -628,7 +628,7 @@ func (w *RWin) scanFolder() {
 
 				item.Connect("activate", func() {
 					w.statusbar.Push(666, fmt.Sprintf("Update %s", path))
-					go w.scanner.Walk(path)
+					go w.scanner.Walk(path) // nolint: errcheck
 				})
 
 				w.dMenu.Append(item)
@@ -760,9 +760,7 @@ func (w *RWin) handleAddProgram() {
 		return
 	}
 
-	var d *db.Database
-
-	d = w.pool.Get()
+	var d = w.pool.Get()
 	defer w.pool.Put(d)
 
 	if err = d.ProgramAdd(&p); err != nil {
@@ -778,8 +776,8 @@ func (w *RWin) handleAddProgram() {
 
 	w.progs[p.ID] = piter
 
-	w.store.SetValue(piter, 0, p.ID)
-	w.store.SetValue(piter, 1, p.Title)
+	w.store.SetValue(piter, 0, p.ID)    // nolint: errcheck
+	w.store.SetValue(piter, 1, p.Title) // nolint: errcheck
 } // func (w *RWin) handleAddProgram()
 
 func (w *RWin) ckFileQueue() bool {
@@ -832,8 +830,8 @@ func (w *RWin) ckFileQueue() bool {
 					piter, _ = w.store.GetIterFirst()
 				} else {
 					piter = w.store.Append(nil)
-					w.store.SetValue(piter, 0, p.ID)
-					w.store.SetValue(piter, 1, p.Title)
+					w.store.SetValue(piter, 0, p.ID)    // nolint: errcheck
+					w.store.SetValue(piter, 1, p.Title) // nolint: errcheck
 					w.progs[p.ID] = piter
 				}
 			}
@@ -843,11 +841,11 @@ func (w *RWin) ckFileQueue() bool {
 
 		fiter = w.store.Append(piter)
 
-		w.store.SetValue(fiter, 0, math.MinInt32)
-		w.store.SetValue(fiter, 2, f.ID)
-		w.store.SetValue(fiter, 3, f.DisplayTitle())
-		w.store.SetValue(fiter, 4, 0)
-		w.store.SetValue(fiter, 5, dstr)
+		w.store.SetValue(fiter, 0, math.MinInt32)    // nolint: errcheck
+		w.store.SetValue(fiter, 2, f.ID)             // nolint: errcheck
+		w.store.SetValue(fiter, 3, f.DisplayTitle()) // nolint: errcheck
+		w.store.SetValue(fiter, 4, 0)                // nolint: errcheck
+		w.store.SetValue(fiter, 5, dstr)             // nolint: errcheck
 	}
 
 	return true
@@ -1222,11 +1220,11 @@ func (w *RWin) fileSetProgram(iter *gtk.TreeIter, f *objects.File, p *objects.Pr
 		pid = math.MinInt32
 	}
 
-	w.store.SetValue(fiter, 0, pid)
-	w.store.SetValue(fiter, 2, f.ID)
-	w.store.SetValue(fiter, 3, f.DisplayTitle())
-	w.store.SetValue(fiter, 4, 0)
-	w.store.SetValue(fiter, 5, dstr)
+	w.store.SetValue(fiter, 0, pid)              // nolint: errcheck
+	w.store.SetValue(fiter, 2, f.ID)             // nolint: errcheck
+	w.store.SetValue(fiter, 3, f.DisplayTitle()) // nolint: errcheck
+	w.store.SetValue(fiter, 4, 0)                // nolint: errcheck
+	w.store.SetValue(fiter, 5, dstr)             // nolint: errcheck
 	w.store.Remove(iter)
 } // func (w *RWin) fileSetProgram(f *objects.File, p *objects.Program)
 
@@ -1371,7 +1369,7 @@ func (w *RWin) editProgram(p *objects.Program, iter *gtk.TreeIter) {
 			txStatus = false
 			goto FINISH
 		} else {
-			w.store.SetValue(iter, 1, ttl)
+			w.store.SetValue(iter, 1, ttl) // nolint: errcheck
 		}
 	}
 
@@ -1385,7 +1383,7 @@ func (w *RWin) editProgram(p *objects.Program, iter *gtk.TreeIter) {
 			w.log.Printf("[ERROR] Invalid URL %q: %s\n",
 				uri,
 				err.Error())
-		} else if c.ProgramSetURL(p, u); err != nil {
+		} else if err = c.ProgramSetURL(p, u); err != nil {
 			w.log.Printf("[ERROR] Cannot update URL for Program %q: %s\n",
 				p.Title,
 				err.Error())
@@ -1586,7 +1584,7 @@ func (w *RWin) getPidFid(iter *gtk.TreeIter) (int64, int64, error) {
 	default:
 		w.log.Printf("[CANTHAPPEN] Unexpected type for ID column: %T\n",
 			v)
-		return 0, 0, fmt.Errorf("Unexpected type for ID column: %T\n",
+		return 0, 0, fmt.Errorf("Unexpected type for ID column: %T",
 			v)
 	}
 
@@ -1637,7 +1635,7 @@ func (w *RWin) refreshFolders() bool {
 		if d > rescanInterval {
 			w.log.Printf("[DEBUG] Re-scanning folder %s\n",
 				f.Path)
-			go w.scanner.Walk(f.Path)
+			go w.scanner.Walk(f.Path) // nolint: errcheck
 		}
 	}
 

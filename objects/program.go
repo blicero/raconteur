@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-20 21:39:00 krylon>
+// Time-stamp: <2022-06-23 21:00:35 krylon>
 
 package objects
 
@@ -13,6 +13,7 @@ import "net/url"
 // whatever.
 type Program struct {
 	ID      int64
+	CurFile int64
 	Title   string
 	Creator string
 	URL     *url.URL

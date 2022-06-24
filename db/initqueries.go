@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-20 17:52:10 krylon>
+// Time-stamp: <2022-06-23 20:53:33 krylon>
 
 package db
 
@@ -20,7 +20,8 @@ CREATE TABLE program (
     id                   INTEGER PRIMARY KEY,
     title                TEXT UNIQUE NOT NULL,
     creator              TEXT NOT NULL DEFAULT '',
-    url                  TEXT NOT NULL DEFAULT ''
+    url                  TEXT NOT NULL DEFAULT '',
+    cur_file             INTEGER NOT NULL DEFAULT -1
 )
 `,
 	`

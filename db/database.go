@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 08. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-23 19:33:39 krylon>
+// Time-stamp: <2022-06-24 21:30:00 krylon>
 
 // Package db provides a wrapper around the actual database connection.
 package db
@@ -913,6 +913,81 @@ EXEC_QUERY:
 	return nil
 } // func (db *Database) ProgramSetURL(p *objects.Program, u *url.URL) error
 
+// ProgramSetCurFile updates the Program's index to the File being currently played.
+func (db *Database) ProgramSetCurFile(p *objects.Program, f *objects.File) error {
+	const qid query.ID = query.ProgramSetCurFile
+	var (
+		err    error
+		msg    string
+		stmt   *sql.Stmt
+		tx     *sql.Tx
+		status bool
+	)
+
+	if f.ProgramID != p.ID {
+		msg = fmt.Sprintf("File %q does not belong to Program %q",
+			f.DisplayTitle(),
+			p.Title)
+		db.log.Printf("[ERROR] %s\n", msg)
+		return errors.New(msg)
+	} else if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid.String(),
+			err.Error())
+		return err
+	} else if db.tx != nil {
+		tx = db.tx
+	} else {
+	BEGIN_AD_HOC:
+		if tx, err = db.db.Begin(); err != nil {
+			if worthARetry(err) {
+				waitForRetry()
+				goto BEGIN_AD_HOC
+			} else {
+				msg = fmt.Sprintf("Error starting transaction: %s\n",
+					err.Error())
+				db.log.Printf("[ERROR] %s\n", msg)
+				return errors.New(msg)
+			}
+
+		} else {
+			defer func() {
+				var err2 error
+				if status {
+					if err2 = tx.Commit(); err2 != nil {
+						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
+							err2.Error())
+					}
+				} else if err2 = tx.Rollback(); err2 != nil {
+					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
+						err2.Error())
+				}
+			}()
+		}
+	}
+
+	stmt = tx.Stmt(stmt)
+
+EXEC_QUERY:
+	if _, err = stmt.Exec(f.ID, p.ID); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		} else {
+			err = fmt.Errorf("Cannot update current File for Program %q to %q: %s",
+				p.Title,
+				f.DisplayTitle(),
+				err.Error())
+			db.log.Printf("[ERROR] %s\n", err.Error())
+			return err
+		}
+	}
+
+	status = true
+	p.CurFile = f.ID
+	return nil
+} // func (db *Database) ProgramSetCurFile(p *objects.Program, f *objects.File) error
+
 // ProgramGetByID loads a Program by its Database ID.
 func (db *Database) ProgramGetByID(id int64) (*objects.Program, error) {
 	const qid query.ID = query.ProgramGetByID
@@ -950,7 +1025,7 @@ EXEC_QUERY:
 			p = &objects.Program{ID: id}
 		)
 
-		if err = rows.Scan(&p.Title, &p.Creator, &u); err != nil {
+		if err = rows.Scan(&p.Title, &p.Creator, &u, &p.CurFile); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
 			return nil, err
 		} else if p.URL, err = url.Parse(u); err != nil {
@@ -1004,7 +1079,7 @@ EXEC_QUERY:
 			p = &objects.Program{Title: title}
 		)
 
-		if err = rows.Scan(&p.ID, &p.Creator, &u); err != nil {
+		if err = rows.Scan(&p.ID, &p.Creator, &u, &p.CurFile); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
 			return nil, err
 		} else if p.URL, err = url.Parse(u); err != nil {
@@ -1058,7 +1133,7 @@ EXEC_QUERY:
 			p objects.Program
 		)
 
-		if err = rows.Scan(&p.ID, &p.Title, &p.Creator, &u); err != nil {
+		if err = rows.Scan(&p.ID, &p.Title, &p.Creator, &u, &p.CurFile); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
 			return nil, err
 		} else if p.URL, err = url.Parse(u); err != nil {
@@ -1554,9 +1629,10 @@ func (db *Database) FileSetPosition(f *objects.File, pos int64) error {
 	}
 
 	stmt = tx.Stmt(stmt)
+	var now = time.Now()
 
 EXEC_QUERY:
-	if _, err = stmt.Exec(pos, f.ID); err != nil {
+	if _, err = stmt.Exec(pos, now.Unix(), f.ID); err != nil {
 		if worthARetry(err) {
 			waitForRetry()
 			goto EXEC_QUERY
@@ -1573,6 +1649,7 @@ EXEC_QUERY:
 
 	status = true
 	f.Position = pos
+	f.LastPlayed = now
 	return nil
 } // func (db *Database) FileSetPosition(f *objects.File, pos int64) error
 

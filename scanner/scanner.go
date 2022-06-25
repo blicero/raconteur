@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-21 22:20:49 krylon>
+// Time-stamp: <2022-06-25 22:25:35 krylon>
 
 // Package scanner implements processing directory trees looking for files that,
 // allegedly, are podcast episodes, audio books, or parts of audio books.
@@ -160,6 +160,7 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 		f = &objects.File{
 			Path:     fullPath,
 			FolderID: w.folder.ID,
+			Ord:      make([]int64, 2),
 		}
 
 		if err = w.db.FileAdd(f); err != nil {
@@ -176,7 +177,7 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 	var (
 		txStatus bool
 		album    string
-		meta     map[string]string
+		meta     *metadata
 	)
 
 	if meta, err = getMetaAudio(f); err != nil {
@@ -189,7 +190,7 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 		goto SEND_FILE
 	}
 
-	if title := meta["Title"]; title != "" {
+	if title := meta.Title; title != "" {
 		if err = w.db.FileSetTitle(f, title); err != nil {
 			w.log.Printf("[ERROR] Cannot set Title for File %s to %q: %s\n",
 				f.Path,
@@ -199,7 +200,7 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 		}
 	}
 
-	if album = meta["Album"]; album == "" {
+	if album = meta.Album; album == "" {
 		album = f.GetParentFolder()
 		if album == filepath.Base(w.root) {
 			album = ""
@@ -217,7 +218,7 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 		} else if prog == nil {
 			prog = &objects.Program{
 				Title:   album,
-				Creator: meta["Artist"],
+				Creator: meta.Artist,
 			}
 
 			if err = w.db.ProgramAdd(prog); err != nil {
@@ -233,6 +234,16 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 				f.Path,
 				album,
 				err.Error())
+			goto FINISH_TX
+		}
+	}
+
+	if meta.Ord[0] != 0 || meta.Ord[1] != 0 {
+		if err = w.db.FileSetOrd(f, meta.Ord); err != nil {
+			w.log.Printf("[ERROR] Cannot set track number for File %q: %s\n",
+				f.DisplayTitle(),
+				err.Error())
+			goto FINISH_TX
 		}
 	}
 

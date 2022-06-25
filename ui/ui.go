@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-24 20:41:03 krylon>
+// Time-stamp: <2022-06-25 21:58:25 krylon>
 
 package ui
 
@@ -376,7 +376,7 @@ func (w *RWin) initializeTree() error {
 			w.store.SetValue(fiter, 0, -f.ProgramID)     // nolint: errcheck
 			w.store.SetValue(fiter, 2, f.ID)             // nolint: errcheck
 			w.store.SetValue(fiter, 3, f.DisplayTitle()) // nolint: errcheck
-			w.store.SetValue(fiter, 4, 0)                // nolint: errcheck
+			w.store.SetValue(fiter, 4, f.Ord[1])         // nolint: errcheck
 			w.store.SetValue(fiter, 5, dur.String())     // nolint: errcheck
 		}
 	}
@@ -844,7 +844,7 @@ func (w *RWin) ckFileQueue() bool {
 		w.store.SetValue(fiter, 0, math.MinInt32)    // nolint: errcheck
 		w.store.SetValue(fiter, 2, f.ID)             // nolint: errcheck
 		w.store.SetValue(fiter, 3, f.DisplayTitle()) // nolint: errcheck
-		w.store.SetValue(fiter, 4, 0)                // nolint: errcheck
+		w.store.SetValue(fiter, 4, f.Ord[1])         // nolint: errcheck
 		w.store.SetValue(fiter, 5, dstr)             // nolint: errcheck
 	}
 

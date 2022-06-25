@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 08. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-24 21:30:00 krylon>
+// Time-stamp: <2022-06-25 21:55:52 krylon>
 
 // Package db provides a wrapper around the actual database connection.
 package db
@@ -1197,10 +1197,18 @@ func (db *Database) FileAdd(f *objects.File) error {
 	}
 
 	stmt = tx.Stmt(stmt)
-	var res sql.Result
+	var (
+		o1, o2 int64
+		res    sql.Result
+	)
+
+	if len(f.Ord) >= 2 {
+		o1 = f.Ord[0]
+		o2 = f.Ord[1]
+	}
 
 EXEC_QUERY:
-	if res, err = stmt.Exec(f.Path, f.FolderID); err != nil {
+	if res, err = stmt.Exec(f.Path, f.FolderID, o1, o2); err != nil {
 		if worthARetry(err) {
 			waitForRetry()
 			goto EXEC_QUERY
@@ -1329,10 +1337,13 @@ EXEC_QUERY:
 	if rows.Next() {
 		var (
 			stamp int64
-			f     = &objects.File{ID: id}
+			f     = &objects.File{
+				ID:  id,
+				Ord: make([]int64, 2),
+			}
 		)
 
-		if err = rows.Scan(&f.ProgramID, &f.FolderID, &f.Path, &f.Title, &f.Position, &stamp); err != nil {
+		if err = rows.Scan(&f.ProgramID, &f.FolderID, &f.Path, &f.Title, &f.Position, &stamp, &f.Ord[0], &f.Ord[1]); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
 			return nil, err
 		}
@@ -1379,10 +1390,13 @@ EXEC_QUERY:
 	if rows.Next() {
 		var (
 			stamp int64
-			f     = &objects.File{Path: path}
+			f     = &objects.File{
+				Path: path,
+				Ord:  make([]int64, 2),
+			}
 		)
 
-		if err = rows.Scan(&f.ID, &f.ProgramID, &f.FolderID, &f.Title, &f.Position, &stamp); err != nil {
+		if err = rows.Scan(&f.ID, &f.ProgramID, &f.FolderID, &f.Title, &f.Position, &stamp, &f.Ord[0], &f.Ord[1]); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
 			return nil, err
 		}
@@ -1430,8 +1444,12 @@ EXEC_QUERY:
 
 	for rows.Next() {
 		var (
-			stamp int64
-			f     = objects.File{ProgramID: p.ID}
+			urlstr *string
+			stamp  int64
+			f      = objects.File{
+				ProgramID: p.ID,
+				Ord:       make([]int64, 2),
+			}
 		)
 
 		if err = rows.Scan(
@@ -1440,9 +1458,16 @@ EXEC_QUERY:
 			&f.Path,
 			&f.Title,
 			&f.Position,
-			&stamp); err != nil {
+			&stamp,
+			&urlstr,
+			&f.Ord[0],
+			&f.Ord[1]); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
 			return nil, err
+		}
+
+		if urlstr != nil {
+			f.URL = *urlstr
 		}
 
 		f.LastPlayed = time.Unix(stamp, 0)
@@ -1489,7 +1514,9 @@ EXEC_QUERY:
 	for rows.Next() {
 		var (
 			stamp int64
-			f     objects.File
+			f     = objects.File{
+				Ord: make([]int64, 2),
+			}
 		)
 
 		if err = rows.Scan(
@@ -1498,7 +1525,9 @@ EXEC_QUERY:
 			&f.Path,
 			&f.Title,
 			&f.Position,
-			&stamp); err != nil {
+			&stamp,
+			&f.Ord[0],
+			&f.Ord[1]); err != nil {
 			db.log.Printf("[ERROR] Cannot scan row: %s\n", err.Error())
 			return nil, err
 		}
@@ -1511,7 +1540,7 @@ EXEC_QUERY:
 	return res, nil
 } // func (db *Database) FileGetNoProgram() ([]objects.File, error)
 
-// FileSetTitle update the title of a file.
+// FileSetTitle updates the title of a file.
 func (db *Database) FileSetTitle(f *objects.File, title string) error {
 	const qid query.ID = query.FileSetTitle
 	var (
@@ -1580,6 +1609,80 @@ EXEC_QUERY:
 	f.Title = title
 	return nil
 } // func (db *Database) FileSetTitle(f *objects.File, title string) error
+
+// FileSetOrd updates the ordering information on a File.
+func (db *Database) FileSetOrd(f *objects.File, ord []int64) error {
+	const qid query.ID = query.FileSetOrd
+	var (
+		err    error
+		msg    string
+		stmt   *sql.Stmt
+		tx     *sql.Tx
+		status bool
+	)
+
+	if len(ord) < 2 {
+		msg = "Invalid parameter, ord must be (at least) two elements long"
+		db.log.Printf("[ERROR] %s\n", msg)
+		return errors.New(msg)
+	} else if stmt, err = db.getQuery(qid); err != nil {
+		db.log.Printf("[ERROR] Cannot prepare query %s: %s\n",
+			qid.String(),
+			err.Error())
+		return err
+	} else if db.tx != nil {
+		tx = db.tx
+	} else {
+	BEGIN_AD_HOC:
+		if tx, err = db.db.Begin(); err != nil {
+			if worthARetry(err) {
+				waitForRetry()
+				goto BEGIN_AD_HOC
+			} else {
+				msg = fmt.Sprintf("Error starting transaction: %s\n",
+					err.Error())
+				db.log.Printf("[ERROR] %s\n", msg)
+				return errors.New(msg)
+			}
+
+		} else {
+			defer func() {
+				var err2 error
+				if status {
+					if err2 = tx.Commit(); err2 != nil {
+						db.log.Printf("[ERROR] Failed to commit ad-hoc transaction: %s\n",
+							err2.Error())
+					}
+				} else if err2 = tx.Rollback(); err2 != nil {
+					db.log.Printf("[ERROR] Rollback of ad-hoc transaction failed: %s\n",
+						err2.Error())
+				}
+			}()
+		}
+	}
+
+	stmt = tx.Stmt(stmt)
+
+EXEC_QUERY:
+	if _, err = stmt.Exec(ord[0], ord[1], f.ID); err != nil {
+		if worthARetry(err) {
+			waitForRetry()
+			goto EXEC_QUERY
+		} else {
+			err = fmt.Errorf("Cannot set Ordering of File %q (%d) to %#v: %s",
+				f.DisplayTitle(),
+				f.ID,
+				ord,
+				err.Error())
+			db.log.Printf("[ERROR] %s\n", err.Error())
+			return err
+		}
+	}
+
+	status = true
+	f.Ord = ord
+	return nil
+} // func (db *Database) FileSetOrd(f *objects.File, ord []int64) error
 
 // FileSetPosition sets the playback position of a File.
 func (db *Database) FileSetPosition(f *objects.File, pos int64) error {

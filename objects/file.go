@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-23 19:30:20 krylon>
+// Time-stamp: <2022-06-25 18:53:45 krylon>
 
 package objects
 
@@ -21,7 +21,7 @@ type File struct {
 	Path       string
 	Title      string
 	URL        string
-	Order      []int
+	Ord        []int64
 	Position   int64
 	LastPlayed time.Time
 }
@@ -42,9 +42,9 @@ func (f *File) Duration() (time.Duration, error) {
 
 // Clone returns an identical copy of the receiver.
 func (f *File) Clone() *File {
-	var ord = make([]int, len(f.Order))
+	var ord = make([]int64, len(f.Ord))
 
-	for idx, o := range f.Order {
+	for idx, o := range f.Ord {
 		ord[idx] = o
 	}
 
@@ -54,7 +54,7 @@ func (f *File) Clone() *File {
 		Path:       f.Path,
 		Title:      f.Title,
 		URL:        f.URL,
-		Order:      ord,
+		Ord:        ord,
 		Position:   f.Position,
 		LastPlayed: f.LastPlayed,
 	}

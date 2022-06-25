@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-24 21:29:28 krylon>
+// Time-stamp: <2022-06-25 18:42:49 krylon>
 
 package db
 
@@ -18,18 +18,46 @@ var dbQueries = map[query.ID]string{
 	query.ProgramSetCreator: "UPDATE program SET creator = ? WHERE id = ?",
 	query.ProgramSetURL:     "UPDATE program SET url = ? WHERE id = ?",
 	query.ProgramSetCurFile: "UPDATE program SET cur_file = ? WHERE id = ?",
-	query.FileAdd:           "INSERT INTO file (path, folder_id) VALUES (?, ?)",
+	query.FileAdd:           "INSERT INTO file (path, folder_id, ord1, ord2) VALUES (?, ?, ?, ?)",
 	query.FileDel:           "DELETE FROM file WHERE id = ?",
-	query.FileGetByID:       "SELECT COALESCE(program_id, 0), folder_id, path, title, position, last_played FROM file WHERE id = ?",
-	query.FileGetByPath:     "SELECT id, COALESCE(program_id, 0), folder_id, title, position, last_played FROM file WHERE path = ?",
-	query.FileGetByProgram:  "SELECT id, folder_id, path, title, position, last_played FROM file WHERE program_id = ?",
-	query.FileGetNoProgram:  "SELECT id, folder_id, path, title, position, last_played FROM file WHERE program_id IS NULL",
-	query.FileSetTitle:      "UPDATE file SET title = ? WHERE id = ?",
-	query.FileSetPosition:   "UPDATE file SET position = ?, last_played = ? WHERE id = ?",
-	query.FileSetProgram:    "UPDATE file SET program_id = ? WHERE id = ?",
-	query.FolderAdd:         "INSERT INTO folder (path) VALUES (?)",
-	query.FolderGetAll:      "SELECT id, path, last_scan FROM folder",
-	query.FolderGetByPath:   "SELECT id, last_scan FROM folder WHERE path = ?",
-	query.FolderGetByID:     "SELECT path, last_scan FROM folder WHERE id = ?",
-	query.FolderUpdateScan:  "UPDATE folder SET last_scan = ? WHERE id = ?",
+	query.FileGetByID:       "SELECT COALESCE(program_id, 0), folder_id, path, title, position, last_played, ord1, ord2 FROM file WHERE id = ?",
+	query.FileGetByPath:     "SELECT id, COALESCE(program_id, 0), folder_id, title, position, last_played, ord1, ord2 FROM file WHERE path = ?",
+	query.FileGetByProgram: `
+SELECT
+    id,
+    folder_id,
+    path,
+    title,
+    position,
+    last_played,
+    url,
+    ord1,
+    ord2
+FROM file
+WHERE program_id = ?
+ORDER BY ord1, ord2, title, path ASC
+`,
+	query.FileGetNoProgram: `
+SELECT
+    id,
+    folder_id,
+    path,
+    title,
+    position,
+    last_played,
+    ord1,
+    ord2
+FROM file
+WHERE program_id IS NULL
+ORDER BY ord1, ord2, title, path ASC
+`,
+	query.FileSetTitle:     "UPDATE file SET title = ? WHERE id = ?",
+	query.FileSetPosition:  "UPDATE file SET position = ?, last_played = ? WHERE id = ?",
+	query.FileSetProgram:   "UPDATE file SET program_id = ? WHERE id = ?",
+	query.FileSetOrd:       "UPDATE file SET ord1 = ?, ord2 = ? WHERE id = ?",
+	query.FolderAdd:        "INSERT INTO folder (path) VALUES (?)",
+	query.FolderGetAll:     "SELECT id, path, last_scan FROM folder",
+	query.FolderGetByPath:  "SELECT id, last_scan FROM folder WHERE path = ?",
+	query.FolderGetByID:    "SELECT path, last_scan FROM folder WHERE id = ?",
+	query.FolderUpdateScan: "UPDATE folder SET last_scan = ? WHERE id = ?",
 }

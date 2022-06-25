@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-23 20:53:33 krylon>
+// Time-stamp: <2022-06-25 18:02:54 krylon>
 
 package db
 
@@ -30,6 +30,8 @@ CREATE TABLE file (
     program_id           INTEGER,
     folder_id            INTEGER NOT NULL,
     path                 TEXT UNIQUE NOT NULL,
+    ord1                 INTEGER NOT NULL DEFAULT 0,
+    ord2                 INTEGER NOT NULL DEFAULT 0,
     title                TEXT NOT NULL DEFAULT '',
     position             INTEGER NOT NULL DEFAULT 0,
     last_played          INTEGER NOT NULL DEFAULT 0,
@@ -45,4 +47,5 @@ CREATE TABLE file (
 	"CREATE INDEX file_prog_idx ON file (program_id)",
 	"CREATE INDEX file_path_idx ON file (path)",
 	"CREATE INDEX file_title_idx ON file (title)",
+	"CREATE INDEX file_ord_index ON file (ord1, ord2)",
 }

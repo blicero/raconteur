@@ -2,12 +2,16 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 14. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-06-25 20:50:55 krylon>
+// Time-stamp: <2022-06-27 20:34:57 krylon>
 
 package scanner
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
+	"regexp"
+	"strconv"
 
 	"github.com/blicero/raconteur/objects"
 	"github.com/dhowden/tag"
@@ -22,6 +26,39 @@ type metadata struct {
 	Year   int64
 	Ord    []int64
 }
+
+var episodePatterns = []*regexp.Regexp{
+	regexp.MustCompile("(?i)(?:ep(?:isode)?|show)?\\s*(\\d+)"),
+	regexp.MustCompile("(?i)^[A-Z]{1,4}\\s?(\\d+)"),
+	regexp.MustCompile("(?i)ep[.]?\\s+(\\d+)"),
+	regexp.MustCompile("^\\s*#(\\d+)"),
+	regexp.MustCompile("Folge (\\d+)"),
+}
+
+func extractEpisodeNumber(path string) (int, bool) {
+	var (
+		err error
+		n   int64
+		m   []string
+	)
+
+	for _, p := range episodePatterns {
+		if m = p.FindStringSubmatch(path); len(m) > 0 {
+			if n, err = strconv.ParseInt(m[1], 10, 64); err != nil {
+				fmt.Fprintf(
+					os.Stderr,
+					"Cannot parse integer %q: %s\n",
+					m[1],
+					err.Error())
+				continue
+			}
+
+			return int(n), true
+		}
+	}
+
+	return 0, false
+} // func extractEpisodeNumber(path string) (int, bool)
 
 // getMetaAudio extracts metadata from various audio formats.
 func getMetaAudio(f *objects.File) (*metadata, error) {
@@ -45,6 +82,11 @@ func getMetaAudio(f *objects.File) (*metadata, error) {
 
 	ord[1], _ = m.Track()
 	ord[0], _ = m.Disc()
+
+	if ord[1] == 0 {
+		// We can still try to extract the number from the file name.
+		ord[1], _ = extractEpisodeNumber(filepath.Base(f.Path))
+	}
 
 	meta = &metadata{
 		Title:  m.Title(),

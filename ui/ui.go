@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-25 21:58:25 krylon>
+// Time-stamp: <2022-06-28 20:05:25 krylon>
 
 package ui
 
@@ -131,6 +131,7 @@ type RWin struct {
 	pCache       map[int64]*objects.Program
 	dCache       map[int64]*objects.Folder
 	mbus         *dbus.Conn
+	sigq         chan *dbus.Signal
 	playerActive bool
 }
 
@@ -193,6 +194,7 @@ func Create() (*RWin, error) {
 	win.fCache = make(map[int64]*objects.File)
 	win.pCache = make(map[int64]*objects.Program)
 	win.dCache = make(map[int64]*objects.Folder)
+	win.sigq = make(chan *dbus.Signal, 25)
 
 	var typeList = make([]glib.Type, len(cols))
 
@@ -285,7 +287,7 @@ func Create() (*RWin, error) {
 	return win, nil
 } // func Create() (*RWin, error)
 
-// Run execute's gtk's main event loop.
+// Run executes gtk's main event loop.
 func (w *RWin) Run() {
 	go func() {
 		var cnt = 0

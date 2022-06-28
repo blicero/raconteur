@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 15. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-06-24 23:36:53 krylon>
+// Time-stamp: <2022-06-28 21:47:12 krylon>
 
 package ui
 
@@ -16,6 +16,7 @@ import (
 	"github.com/blicero/raconteur/common"
 	"github.com/blicero/raconteur/db"
 	"github.com/blicero/raconteur/objects"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -24,15 +25,20 @@ const (
 	playerPath     = "/usr/bin/vlc"
 	objName        = "org.mpris.MediaPlayer2.vlc"
 	objPath        = "/org/mpris/MediaPlayer2"
+	objAddMatch    = "org.freedesktop.DBus.AddMatch"
 	objInterface   = "org.mpris.MediaPlayer2.Player"
 	trackInterface = "org.mpris.MediaPlayer2.TrackList"
 	trackList      = "org.mpris.MediaPlayer2.TrackList.Tracks"
 	noTrack        = "/org/mpris/MediaPlayer2/TrackList/NoTrack"
 	addTrack       = "org.mpris.MediaPlayer2.TrackList.AddTrack"
 	delTrack       = "org.mpris.MediaPlayer2.TrackList.RemoveTrack"
+	playerPlay     = "org.mpris.MediaPlayer2.Player.Play"
 	propStatus     = "org.mpris.MediaPlayer2.Player.PlaybackStatus"
 	propPosition   = "org.mpris.MediaPlayer2.Player.Position"
 	propMeta       = "org.mpris.MediaPlayer2.Player.Metadata"
+	propTracklist  = "org.mpris.MediaPlayer2.TrackList.Tracks"
+	signalSeeked   = "/org/mpris/MediaPlayer2/Player/Seeked"
+	signalTrackAdd = "/org/mpris/MediaPlayer2/Player/TrackAdded"
 )
 
 func (w *RWin) getPlayerStatus() (string, error) {
@@ -93,14 +99,14 @@ func (w *RWin) getPlayerStatus() (string, error) {
 	w.log.Printf("[DEBUG] Player is at position %s\n",
 		sec)
 
-	if common.Debug {
-		for k, v := range meta {
-			w.log.Printf("[DEBUG] Meta %-15s => (%T) %#v\n",
-				k,
-				v.Value(),
-				v.Value())
-		}
-	}
+	// if common.Debug {
+	// 	for k, v := range meta {
+	// 		w.log.Printf("[DEBUG] Meta %-15s => (%T) %#v\n",
+	// 			k,
+	// 			v.Value(),
+	// 			v.Value())
+	// 	}
+	// }
 
 	var (
 		uriRaw, uriEsc string
@@ -203,28 +209,28 @@ func (w *RWin) playerCreate() error {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 
-	if !w.playerActive {
-		var cmd = exec.Command(
-			playerPath,
-			"--no-fullscreen",
-			// "-no-close-at-end",
-		)
-
-		if err := cmd.Start(); err != nil {
-			w.log.Printf("[ERROR] Cannot start player %s: %s\n",
-				playerPath,
-				err.Error())
-			return err
-		}
-
-		w.playerActive = true
-		go w.playerTimeout(cmd)
-
+	if w.playerActive {
+		w.log.Printf("[INFO] Player is already active?\n")
 		return nil
 	}
 
-	w.log.Printf("[DEBUG] Player %s is already started.\n",
-		playerPath)
+	var cmd = exec.Command(
+		playerPath,
+		"--no-fullscreen",
+		// "-no-close-at-end",
+	)
+
+	if err := cmd.Start(); err != nil {
+		w.log.Printf("[ERROR] Cannot start player %s: %s\n",
+			playerPath,
+			err.Error())
+		return err
+	}
+
+	w.playerActive = true
+	go w.playerTimeout(cmd)
+	w.playerRegisterSignals()
+
 	return nil
 } // func (w *RWin) playerCreate() error
 
@@ -242,6 +248,41 @@ func (w *RWin) playerTimeout(proc *exec.Cmd) {
 	w.playerActive = false
 	w.lock.Unlock()
 } // func (w *RWin) playerTimeout()
+
+func (w *RWin) playerRegisterSignals() error {
+	krylib.Trace()
+	var req = fmt.Sprintf("type='signal',path='%s',interface='%s',sender='%s'",
+		signalTrackAdd,
+		objInterface,
+		objName)
+
+	var res = w.mbus.BusObject().Call(
+		objAddMatch,
+		0,
+		req,
+	)
+
+	if res.Err != nil {
+		w.log.Printf("[ERROR] Cannot register Signal TrackAdd: %s\n",
+			res.Err.Error())
+		return res.Err
+	}
+
+	w.mbus.Signal(w.sigq)
+
+	go w.playerProcessSignals()
+	return nil
+} // func (w *RWin) playerRegisterSignals() error
+
+func (w *RWin) playerProcessSignals() {
+	krylib.Trace()
+	for v := range w.sigq {
+		w.log.Printf("[INFO] %T => %#v\n\n%s\n",
+			v,
+			v,
+			spew.Sdump(v))
+	}
+} // func (w *RWin) playerProcessSignals()
 
 func (w *RWin) playerPlayProgram(p *objects.Program) {
 	krylib.Trace()
@@ -272,22 +313,50 @@ func (w *RWin) playerPlayProgram(p *objects.Program) {
 		w.log.Printf("[TRACE] Add %s to Playlist\n",
 			f.DisplayTitle())
 
+		var (
+			val   dbus.Variant
+			track = dbus.ObjectPath(noTrack)
+		)
+
+		if val, err = obj.GetProperty(propTracklist); err != nil {
+			w.log.Printf("[ERROR] Cannot get TrackList %s: %s\n",
+				propTracklist,
+				err.Error())
+			track = dbus.ObjectPath(noTrack)
+		} else {
+			var list []dbus.ObjectPath
+			list = val.Value().([]dbus.ObjectPath)
+
+			w.log.Printf("[DEBUG] %s = %T => %s\n",
+				propTracklist,
+				val,
+				spew.Sdump(val))
+
+			if len(list) == 0 {
+				track = dbus.ObjectPath(noTrack)
+			} else {
+				track = list[len(list)-1]
+			}
+		}
+
 		var res = obj.Call(
 			addTrack,
 			0, // dbus.FlagNoReplyExpected,
 			f.PathURL(),
-			dbus.ObjectPath(noTrack),
+			track, //dbus.ObjectPath(noTrack),
 			false,
 		)
 
 		if res.Err != nil {
 			w.log.Printf("[ERROR] DBus method call failed: %s\n",
 				res.Err.Error())
+		} else {
+			time.Sleep(time.Millisecond * 100)
 		}
 	}
 
 	obj.Call(
-		"org.mpris.MediaPlayer2.Player.Play",
+		playerPlay,
 		dbus.FlagNoReplyExpected,
 	)
 

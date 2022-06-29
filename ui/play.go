@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 15. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-06-28 21:47:12 krylon>
+// Time-stamp: <2022-06-29 22:37:56 krylon>
 
 package ui
 
@@ -18,6 +18,7 @@ import (
 	"github.com/blicero/raconteur/objects"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/godbus/dbus/v5"
+	"github.com/gotk3/gotk3/gtk"
 )
 
 // nolint: deadcode,unused,varcheck
@@ -251,15 +252,15 @@ func (w *RWin) playerTimeout(proc *exec.Cmd) {
 
 func (w *RWin) playerRegisterSignals() error {
 	krylib.Trace()
-	var req = fmt.Sprintf("type='signal',path='%s',interface='%s',sender='%s'",
-		signalTrackAdd,
-		objInterface,
-		objName)
 
-	var res = w.mbus.BusObject().Call(
-		objAddMatch,
-		0,
-		req,
+	w.mbus.Signal(w.sigq)
+
+	var obj = w.mbus.BusObject()
+	var res = obj.AddMatchSignal(
+		trackInterface,
+		"TrackAdded",
+		dbus.WithMatchObjectPath(objPath),
+		dbus.WithMatchOption("sender", objName),
 	)
 
 	if res.Err != nil {
@@ -268,9 +269,13 @@ func (w *RWin) playerRegisterSignals() error {
 		return res.Err
 	}
 
-	w.mbus.Signal(w.sigq)
+	w.log.Printf("[DEBUG] Result of registering Signal: %s\n",
+		spew.Sdump(res))
 
 	go w.playerProcessSignals()
+
+	// time.Sleep(time.Millisecond * 1000)
+
 	return nil
 } // func (w *RWin) playerRegisterSignals() error
 
@@ -282,6 +287,8 @@ func (w *RWin) playerProcessSignals() {
 			v,
 			spew.Sdump(v))
 	}
+
+	w.log.Printf("[DEBUG] playerProcessSignals is quitting.\n")
 } // func (w *RWin) playerProcessSignals()
 
 func (w *RWin) playerPlayProgram(p *objects.Program) {
@@ -309,7 +316,10 @@ func (w *RWin) playerPlayProgram(p *objects.Program) {
 		return
 	}
 
-	for _, f := range files {
+	// for _, f := range files {
+	for i := len(files) - 1; i >= 0; i-- {
+		f := files[i]
+
 		w.log.Printf("[TRACE] Add %s to Playlist\n",
 			f.DisplayTitle())
 
@@ -318,19 +328,20 @@ func (w *RWin) playerPlayProgram(p *objects.Program) {
 			track = dbus.ObjectPath(noTrack)
 		)
 
-		if val, err = obj.GetProperty(propTracklist); err != nil {
+		if val, err = obj.GetProperty(trackList); err != nil {
 			w.log.Printf("[ERROR] Cannot get TrackList %s: %s\n",
 				propTracklist,
 				err.Error())
 			track = dbus.ObjectPath(noTrack)
 		} else {
-			var list []dbus.ObjectPath
-			list = val.Value().([]dbus.ObjectPath)
+			var list = val.Value().([]dbus.ObjectPath)
 
-			w.log.Printf("[DEBUG] %s = %T => %s\n",
-				propTracklist,
+			w.log.Printf("[DEBUG] %s = %T => %s\n%s\n",
+				trackList,
 				val,
-				spew.Sdump(val))
+				spew.Sdump(val),
+				spew.Sdump(list),
+			)
 
 			if len(list) == 0 {
 				track = dbus.ObjectPath(noTrack)
@@ -347,12 +358,24 @@ func (w *RWin) playerPlayProgram(p *objects.Program) {
 			false,
 		)
 
+		gtk.MainIterationDo(false)
+
 		if res.Err != nil {
 			w.log.Printf("[ERROR] DBus method call failed: %s\n",
 				res.Err.Error())
 		} else {
+			if common.Debug {
+				w.log.Printf("[DEBUG] AddTrack returned %s\n",
+					spew.Sdump(res))
+			}
 			time.Sleep(time.Millisecond * 100)
 		}
+	}
+
+	// time.Sleep(time.Second)
+
+	for i := 0; i < 3; i++ {
+		gtk.MainIterationDo(false)
 	}
 
 	obj.Call(
@@ -381,6 +404,11 @@ func (w *RWin) playerClearPlaylist() error {
 	}
 
 	var items = val.Value().([]dbus.ObjectPath)
+
+	if common.Debug {
+		w.log.Printf("[DEBUG] Current Playlist: %s\n",
+			spew.Sdump(items))
+	}
 
 	for _, i := range items {
 		w.log.Printf("[TRACE] Process %s\n",

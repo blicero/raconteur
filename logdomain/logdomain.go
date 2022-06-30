@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2021-09-06 18:39:25 krylon>
+// Time-stamp: <2022-06-30 20:08:52 krylon>
 
 // Package logdomain provides constants for log sources.
 package logdomain
@@ -19,6 +19,7 @@ const (
 	Database
 	GUI
 	Scanner
+	Player
 )
 
 // AllDomains returns a slice of all the known log sources.
@@ -29,5 +30,6 @@ func AllDomains() []ID {
 		Database,
 		GUI,
 		Scanner,
+		Player,
 	}
 } // func AllDomains() []ID

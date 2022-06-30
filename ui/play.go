@@ -2,7 +2,9 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 15. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-06-29 22:37:56 krylon>
+// Time-stamp: <2022-06-30 19:47:20 krylon>
+
+// +build ignore
 
 package ui
 

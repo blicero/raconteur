@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-06-29 23:46:36 krylon>
+# Time-stamp: <2022-06-30 20:48:14 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -18,23 +18,24 @@ yet how that would factor in.
 * Clock
   Here I keep track of the time I waste on this futile effort.
   #+BEGIN: clocktable :scope file :maxlevel 202 :emphasize t
-  #+CAPTION: Clock summary at [2022-06-29 Mi 23:46]
-  | Headline                   | Time      |           |          |      |
-  |----------------------------+-----------+-----------+----------+------|
-  | *Total time*               | *4d 5:48* |           |          |      |
-  |----------------------------+-----------+-----------+----------+------|
-  | *Moving parts*             | *4d 5:48* |           |          |      |
-  | \_  /Data types/           |           | /2:40/    |          |      |
-  | \_  /Database/             |           | /7:25/    |          |      |
-  | \_  /Scanner/              |           | /10:05/   |          |      |
-  | \_    Metadata             |           |           |     8:15 |      |
-  | \_      Monitor Folders    |           |           |          | 4:45 |
-  | \_  /GUI/                  |           | /3d 9:38/ |          |      |
-  | \_    Playback             |           |           | 1d 18:29 |      |
-  | \_      VLC                |           |           |          | 3:48 |
-  | \_    TreeView             |           |           |     9:09 |      |
-  | \_      Multiple Selection |           |           |          | 7:33 |
-  | \_      Sorting            |           |           |          | 1:36 |
+  #+CAPTION: Clock summary at [2022-06-30 Do 20:48]
+  | Headline                   | Time      |            |          |      |
+  |----------------------------+-----------+------------+----------+------|
+  | *Total time*               | *4d 7:13* |            |          |      |
+  |----------------------------+-----------+------------+----------+------|
+  | *Moving parts*             | *4d 7:13* |            |          |      |
+  | \_  /Data types/           |           | /2:40/     |          |      |
+  | \_  /Database/             |           | /7:25/     |          |      |
+  | \_  /Scanner/              |           | /10:05/    |          |      |
+  | \_    Metadata             |           |            |     8:15 |      |
+  | \_      Monitor Folders    |           |            |          | 4:45 |
+  | \_  /GUI/                  |           | /3d 11:03/ |          |      |
+  | \_    Playback             |           |            | 1d 19:54 |      |
+  | \_      GStreamer          |           |            |          | 1:25 |
+  | \_      VLC                |           |            |          | 3:48 |
+  | \_    TreeView             |           |            |     9:09 |      |
+  | \_      Multiple Selection |           |            |          | 7:33 |
+  | \_      Sorting            |           |            |          | 1:36 |
   #+END:
 
 * Moving parts
@@ -112,6 +113,14 @@ yet how that would factor in.
     for which Go bindings exist.
     Also, if I use an external player, I /could/ just start a process, like
     gPodder does, or I could use dbus to control the player. ???
+**** TODO GStreamer
+     :LOGBOOK:
+     CLOCK: [2022-06-30 Do 18:57]--[2022-06-30 Do 20:22] =>  1:25
+     :END:
+     After a bunch of trial and error, I must conclude that VLC does not match
+     my expectations. So I will can it for the moment and make an attempt to
+     use gstreamer to play the audio directly from my application. I wonder
+     how that will work out.
 **** VLC
      :LOGBOOK:
      CLOCK: [2022-06-29 Mi 18:47]--[2022-06-29 Mi 22:35] =>  3:48

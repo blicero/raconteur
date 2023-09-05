@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 06. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-25 18:53:45 krylon>
+// Time-stamp: <2023-09-05 23:12:00 krylon>
 
 package objects
 
@@ -44,9 +44,10 @@ func (f *File) Duration() (time.Duration, error) {
 func (f *File) Clone() *File {
 	var ord = make([]int64, len(f.Ord))
 
-	for idx, o := range f.Ord {
-		ord[idx] = o
-	}
+	// for idx, o := range f.Ord {
+	// 	ord[idx] = o
+	// }
+	copy(ord, f.Ord)
 
 	return &File{
 		ID:         f.ID,

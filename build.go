@@ -2,8 +2,9 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 01. 02. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-21 20:04:38 krylon>
+// Time-stamp: <2023-09-05 23:34:06 krylon>
 
+//go:build ignore
 // +build ignore
 
 package main
@@ -107,6 +108,10 @@ func main() {
 		raceDetect            bool
 		lvlString             = make([]string, len(logLevels))
 	)
+
+	if runtime.GOARCH == "amd64" {
+		os.Setenv("PKG_CONFIG_PATH", "/usr/lib64/pkgconfig:/usr/share/pkgconfig")
+	}
 
 	for i, l := range logLevels {
 		lvlString[i] = string(l)

@@ -2,13 +2,14 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-25 22:25:35 krylon>
+// Time-stamp: <2023-09-06 14:33:38 krylon>
 
 // Package scanner implements processing directory trees looking for files that,
 // allegedly, are podcast episodes, audio books, or parts of audio books.
 package scanner
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"log"
@@ -46,14 +47,22 @@ type Walker struct {
 
 // New creates a new Walker for the given folder.
 func New(conn *db.Database) (*Walker, error) {
-	var w = &Walker{
-		db:        conn,
-		Files:     make(chan *objects.File, 8),
-		skipCache: make(map[string]bool),
-	}
-	var err error
+	var (
+		err error
+		w   = &Walker{
+			db:        conn,
+			Files:     make(chan *objects.File, 8),
+			skipCache: make(map[string]bool),
+		}
+	)
 
-	if w.log, err = common.GetLogger(logdomain.Scanner); err != nil {
+	if conn == nil {
+		fmt.Fprintf(
+			os.Stderr,
+			"Database connection is nil\n",
+		)
+		return nil, errors.New("Database connection is nil")
+	} else if w.log, err = common.GetLogger(logdomain.Scanner); err != nil {
 		fmt.Fprintf(os.Stderr,
 			"Error getting Logger for %s: %s\n",
 			logdomain.Scanner,
@@ -184,6 +193,11 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 		w.log.Printf("[ERROR] Cannot extract metadata from %s: %s\n",
 			f.Path,
 			err.Error())
+		goto SEND_FILE
+	} else if meta == nil {
+		w.log.Printf("[INFO] No metadata found for %s\n",
+			f.Path)
+		goto SEND_FILE
 	} else if err = w.db.Begin(); err != nil {
 		w.log.Printf("[ERROR] Cannot start transaction: %s\n",
 			err.Error())

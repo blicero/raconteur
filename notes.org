@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2022-06-30 20:48:14 krylon>
+# Time-stamp: <2023-09-08 11:23:42 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -130,6 +130,14 @@ yet how that would factor in.
      reliably, and I have no clue whatsoever why that might be.
      ...
      Turns out that after erasing my config file, VLC runs just fine. WTF?
+**** TODO Audacious
+     :LOGBOOK:
+     CLOCK: [2023-09-06 Mi 19:19]--[2023-09-06 Mi 20:13] =>  0:54
+     :END:
+     I'll give audacious a try, because ... don't hate me ... I'm listening to
+     VLC while coding, I don't want to interfere with that. 🤷🏻‍♂️
+     As an afterthought, I discovered that audacious has a very rich D-Bus
+     interface, far more feature-rich than what MPris2 offers.
 *** TreeView
 **** SUSPENDED Multiple Selection
      CLOSED: [2022-06-14 Di 22:01]

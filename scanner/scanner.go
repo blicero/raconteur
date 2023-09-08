@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 07. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2023-09-06 14:33:38 krylon>
+// Time-stamp: <2023-09-08 22:00:25 krylon>
 
 // Package scanner implements processing directory trees looking for files that,
 // allegedly, are podcast episodes, audio books, or parts of audio books.
@@ -19,7 +19,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/blicero/krylib"
 	"github.com/blicero/raconteur/common"
 	"github.com/blicero/raconteur/db"
 	"github.com/blicero/raconteur/logdomain"
@@ -153,9 +152,9 @@ func (w *Walker) visit(path string, d fs.DirEntry, incoming error) error {
 		return err
 	} else if info.Size() < minSize {
 		w.skipCache[path] = true
-		w.log.Printf("[DEBUG] %s is too small (%s)\n",
-			fullPath,
-			krylib.FmtBytes(info.Size()))
+		// w.log.Printf("[DEBUG] %s is too small (%s)\n",
+		// 	fullPath,
+		// 	krylib.FmtBytes(info.Size()))
 		return nil
 	} else if f, err = w.db.FileGetByPath(fullPath); err != nil {
 		w.log.Printf("[ERROR] Failed to look up file %s: %s\n",

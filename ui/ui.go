@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2023-09-06 20:03:07 krylon>
+// Time-stamp: <2023-09-08 22:03:20 krylon>
 
 package ui
 
@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/blicero/krylib"
@@ -32,7 +33,7 @@ import (
 // to a more reasonable value, say 30 or 60 minutes.
 const (
 	ckFileInterval = time.Millisecond * 25
-	rescanInterval = time.Second * 30
+	rescanInterval = time.Second * 600
 )
 
 // type tabContent struct {
@@ -55,32 +56,32 @@ type column struct {
 }
 
 var cols = []column{
-	column{
+	{
 		colType: glib.TYPE_INT,
 		title:   "PID",
 	},
-	column{
+	{
 		colType: glib.TYPE_STRING,
 		title:   "Program",
 		display: true,
 	},
-	column{
+	{
 		colType: glib.TYPE_INT,
 		title:   "ID",
 	},
-	column{
+	{
 		colType: glib.TYPE_STRING,
 		title:   "Title",
 		edit:    true,
 		display: true,
 	},
-	column{
+	{
 		colType: glib.TYPE_INT,
 		title:   "#",
 		edit:    true,
 		display: true,
 	},
-	column{
+	{
 		colType: glib.TYPE_STRING,
 		title:   "Dur",
 		display: true,
@@ -88,9 +89,9 @@ var cols = []column{
 }
 
 func createCol(title string, id int) (*gtk.TreeViewColumn, *gtk.CellRendererText, error) {
-	krylib.Trace()
-	defer fmt.Printf("[TRACE] EXIT %s\n",
-		krylib.TraceInfo())
+	// krylib.Trace()
+	// defer fmt.Printf("[TRACE] EXIT %s\n",
+	// 	krylib.TraceInfo())
 
 	renderer, err := gtk.CellRendererTextNew()
 	if err != nil {
@@ -132,7 +133,7 @@ type RWin struct {
 	dCache       map[int64]*objects.Folder
 	mbus         *dbus.Conn
 	sigq         chan *dbus.Signal
-	playerActive bool
+	playerActive atomic.Bool
 }
 
 // Create creates a GUI. Who would've thought?
@@ -901,7 +902,7 @@ func (w *RWin) handleFileListClick(view *gtk.TreeView, evt *gdk.Event) {
 
 	iters = make([]*gtk.TreeIter, 0, rows.Length())
 
-	rows.Foreach(func(i interface{}) {
+	rows.Foreach(func(i any) {
 		switch r := i.(type) {
 		case *gtk.TreePath:
 			if i, e := w.store.GetIter(r); err != nil {
@@ -919,47 +920,46 @@ func (w *RWin) handleFileListClick(view *gtk.TreeView, evt *gdk.Event) {
 
 	if len(iters) == 0 {
 		return
-	} else if len(iters) == 1 {
-		iter = iters[0]
+	} else if len(iters) > 1 {
+		w.displayMsg("Handling multiple selection is not implemented, yet.")
+		return
+	}
 
-		var title string = col.GetTitle()
-		w.log.Printf("[DEBUG] Column %s was clicked\n",
-			title)
+	iter = iters[0]
 
-		var (
-			pid, fid int64
-		)
+	var title string = col.GetTitle()
+	w.log.Printf("[DEBUG] Column %s was clicked\n",
+		title)
 
-		if pid, fid, err = w.getPidFid(iter); err != nil {
-			w.log.Printf("[ERROR] Cannot get PID/FID: %s\n",
+	var (
+		pid, fid int64
+	)
+
+	if pid, fid, err = w.getPidFid(iter); err != nil {
+		w.log.Printf("[ERROR] Cannot get PID/FID: %s\n",
+			err.Error())
+		return
+	}
+
+	w.log.Printf("[DEBUG] PID of clicked-on row is %d, FID is %d\n",
+		pid,
+		fid)
+
+	// First of all, we need to figure out if we clicked on a Program or a File.
+	if pid >= 0 {
+		w.log.Printf("[DEBUG] We clicked on a Program\n")
+		if menu, err = w.mkContextMenuProgram(iter, pid); err != nil {
+			w.log.Printf("[ERROR] Cannot create context menu: %s\n",
 				err.Error())
 			return
 		}
-
-		w.log.Printf("[DEBUG] PID of clicked-on row is %d, FID is %d\n",
-			pid,
-			fid)
-
-		// First of all, we need to figure out if we clicked on a Program or a File.
-		if pid >= 0 {
-			w.log.Printf("[DEBUG] We clicked on a Program\n")
-			if menu, err = w.mkContextMenuProgram(iter, pid); err != nil {
-				w.log.Printf("[ERROR] Cannot create context menu: %s\n",
-					err.Error())
-				return
-			}
-		} else {
-			w.log.Printf("[DEBUG] We clicked on a File\n")
-			if menu, err = w.mkContextMenuFile(iter, fid); err != nil {
-				w.log.Printf("[ERROR] Cannot create context menu: %s\n",
-					err.Error())
-				return
-			}
-		}
 	} else {
-
-		w.displayMsg("Handling multiple selection is not implemented, yet.")
-		return
+		w.log.Printf("[DEBUG] We clicked on a File\n")
+		if menu, err = w.mkContextMenuFile(iter, fid); err != nil {
+			w.log.Printf("[ERROR] Cannot create context menu: %s\n",
+				err.Error())
+			return
+		}
 	}
 
 	menu.ShowAll()

@@ -2,17 +2,13 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 30. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-06-30 20:46:33 krylon>
+// Time-stamp: <2023-09-06 20:01:40 krylon>
 
 package ui
 
-import (
-	"log"
-)
+// func init() {
+// }
 
-func init() {
-}
-
-type player struct {
-	log *log.Logger
-}
+// type player struct {
+// 	log *log.Logger
+// }

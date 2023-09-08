@@ -2,7 +2,9 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 15. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2023-09-05 23:40:50 krylon>
+// Time-stamp: <2023-09-08 13:18:26 krylon>
+
+//go:build ignore
 
 package ui
 
@@ -23,8 +25,8 @@ import (
 
 // nolint: deadcode,unused,varcheck
 const (
-	playerPath     = "/usr/bin/vlc"
-	objName        = "org.mpris.MediaPlayer2.vlc"
+	playerPath     = "/usr/bin/audacious"
+	objName        = "org.mpris.MediaPlayer2.audacious"
 	objPath        = "/org/mpris/MediaPlayer2"
 	objAddMatch    = "org.freedesktop.DBus.AddMatch"
 	objInterface   = "org.mpris.MediaPlayer2.Player"
@@ -50,7 +52,7 @@ func (w *RWin) getPlayerStatus() (string, error) {
 		obj = w.mbus.Object(objName, objPath)
 	)
 
-	w.log.Printf("[TRACE] getPlayerStatus - ENTER\n")
+	// w.log.Printf("[TRACE] getPlayerStatus - ENTER\n")
 
 	if val, err = obj.GetProperty(propStatus); err != nil {
 		// w.log.Printf("[ERROR] Cannot get player status: %s\n",
@@ -60,8 +62,8 @@ func (w *RWin) getPlayerStatus() (string, error) {
 
 	str = val.Value().(string)
 
-	w.log.Printf("[DEBUG] PlaybackStatus is %s\n",
-		str)
+	// w.log.Printf("[DEBUG] PlaybackStatus is %s\n",
+	// 	str)
 
 	if !(str == "Playing" || str == "Paused") {
 		return str, nil
@@ -164,6 +166,10 @@ func (w *RWin) getPlayerStatus() (string, error) {
 			fileURL.Path,
 			err.Error())
 		return "", err
+	} else if f == nil {
+		w.log.Printf("[DEBUG] File %s was not found in database\n",
+			fileURL.Path)
+		return "", nil
 	} else if err = c.FileSetPosition(f, pos); err != nil {
 		w.log.Printf("[ERROR] Cannot set Position for File %q to %s: %s\n",
 			f.DisplayTitle(),

@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2022-06-28 20:05:25 krylon>
+// Time-stamp: <2023-09-06 20:03:07 krylon>
 
 package ui
 
@@ -263,17 +263,17 @@ func Create() (*RWin, error) {
 	go func() {
 		var (
 			ex error
-			s  string
+			// s  string
 		)
 
 		for {
 			time.Sleep(time.Second * 5)
-			if s, ex = win.getPlayerStatus(); ex != nil {
-				// win.log.Printf("[ERROR] Cannot query player status: %s\n",
-				// 	ex.Error())
-			} else {
+			if _, ex = win.getPlayerStatus(); ex != nil {
+				win.log.Printf("[ERROR] Cannot query player status: %s\n",
+					ex.Error())
+			} /*else {
 				win.log.Printf("[DEBUG] Player is %s\n", s)
-			}
+			}*/
 
 		}
 	}()

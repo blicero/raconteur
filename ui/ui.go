@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2023-09-08 22:03:20 krylon>
+// Time-stamp: <2023-09-09 18:19:14 krylon>
 
 package ui
 
@@ -261,23 +261,23 @@ func Create() (*RWin, error) {
 	glib.IdleAdd(win.ckFileQueue)
 	glib.TimeoutAdd(uint(rescanInterval.Milliseconds()), win.refreshFolders)
 
-	go func() {
-		var (
-			ex error
-			// s  string
-		)
+	// go func() {
+	// 	var (
+	// 		ex error
+	// 		// s  string
+	// 	)
 
-		for {
-			time.Sleep(time.Second * 5)
-			if _, ex = win.getPlayerStatus(); ex != nil {
-				win.log.Printf("[ERROR] Cannot query player status: %s\n",
-					ex.Error())
-			} /*else {
-				win.log.Printf("[DEBUG] Player is %s\n", s)
-			}*/
+	// 	for {
+	// 		time.Sleep(time.Second * 5)
+	// 		if _, ex = win.getPlayerStatus(); ex != nil {
+	// 			win.log.Printf("[ERROR] Cannot query player status: %s\n",
+	// 				ex.Error())
+	// 		} /*else {
+	// 			win.log.Printf("[DEBUG] Player is %s\n", s)
+	// 		}*/
 
-		}
-	}()
+	// 	}
+	// }()
 
 	win.win.ShowAll()
 	win.win.SetSizeRequest(960, 540)
@@ -1429,12 +1429,12 @@ func (w *RWin) playProgram(p *objects.Program) {
 
 	time.Sleep(time.Millisecond * 2000)
 
-	if err = w.playerClearPlaylist(); err != nil {
-		w.log.Printf("[ERROR] Cannot clear playlist: %s\n",
-			err.Error())
-	} else {
-		w.playerPlayProgram(p)
-	}
+	// if err = w.playerClearPlaylist(); err != nil {
+	// 	w.log.Printf("[ERROR] Cannot clear playlist: %s\n",
+	// 		err.Error())
+	// } else {
+	w.playerPlayProgram(p)
+	// }
 } // func (w *RWin) playProgram(p *objects.Program)
 
 func (w *RWin) cmpIter(m *gtk.TreeModel, a, b *gtk.TreeIter) int {

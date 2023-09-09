@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 15. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2023-09-08 22:51:08 krylon>
+// Time-stamp: <2023-09-09 18:18:34 krylon>
 
 package ui
 
@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/blicero/krylib"
-	"github.com/blicero/raconteur/common"
 	"github.com/blicero/raconteur/db"
 	"github.com/blicero/raconteur/objects"
 	"github.com/davecgh/go-spew/spew"
@@ -23,28 +22,31 @@ import (
 
 // nolint: deadcode,unused,varcheck
 const (
-	playerPath           = "/usr/bin/audacious"
-	objName              = "org.mpris.MediaPlayer2.audacious"
-	objPath              = "/org/mpris/MediaPlayer2"
-	objAddMatch          = "org.freedesktop.DBus.AddMatch"
-	objInterface         = "org.mpris.MediaPlayer2.Player"
-	audInterface         = "org.atheme.audacious"
-	audPath              = "org/atheme/audacious"
-	methStatus           = "Status"
-	methPlaylistCreate   = "NewPlaylist"
-	methPlaylistAddFiles = "org.atheme.audacious.AddList"
-	trackInterface       = "org.mpris.MediaPlayer2.TrackList"
-	trackList            = "org.mpris.MediaPlayer2.TrackList.Tracks"
-	noTrack              = "/org/mpris/MediaPlayer2/TrackList/NoTrack"
-	addTrack             = "org.mpris.MediaPlayer2.TrackList.AddTrack"
-	delTrack             = "org.mpris.MediaPlayer2.TrackList.RemoveTrack"
-	playerPlay           = "org.mpris.MediaPlayer2.Player.Play"
-	propStatus           = "org.mpris.MediaPlayer2.Player.PlaybackStatus"
-	propPosition         = "org.mpris.MediaPlayer2.Player.Position"
-	propMeta             = "org.mpris.MediaPlayer2.Player.Metadata"
-	propTracklist        = "org.mpris.MediaPlayer2.TrackList.Tracks"
-	signalSeeked         = "/org/mpris/MediaPlayer2/Player/Seeked"
-	signalTrackAdd       = "/org/mpris/MediaPlayer2/Player/TrackAdded"
+	playerPath            = "/usr/bin/audacious"
+	objName               = "org.atheme.audacious"
+	objPath               = "/org/mpris/MediaPlayer2"
+	objAddMatch           = "org.freedesktop.DBus.AddMatch"
+	objInterface          = "org.mpris.MediaPlayer2.Player"
+	audInterface          = "org.atheme.audacious"
+	audPath               = "/org/atheme/audacious"
+	methStatus            = "Status"
+	methPlaylistCreate    = "NewPlaylist"
+	methPlaylistAddFiles  = "AddList"
+	methPlaylistOpenFiles = "OpenList"
+	methPlay              = "Play"
+	trackInterface        = "org.mpris.MediaPlayer2.TrackList"
+	trackList             = "org.mpris.MediaPlayer2.TrackList.Tracks"
+	noTrack               = "/org/mpris/MediaPlayer2/TrackList/NoTrack"
+	addTrack              = "org.mpris.MediaPlayer2.TrackList.AddTrack"
+	delTrack              = "org.mpris.MediaPlayer2.TrackList.RemoveTrack"
+	playerPlay            = "org.mpris.MediaPlayer2.Player.Play"
+	propStatus            = "org.mpris.MediaPlayer2.Player.PlaybackStatus"
+	propPosition          = "org.mpris.MediaPlayer2.Player.Position"
+	propMeta              = "org.mpris.MediaPlayer2.Player.Metadata"
+	propTracklist         = "org.mpris.MediaPlayer2.TrackList.Tracks"
+	signalSeeked          = "/org/mpris/MediaPlayer2/Player/Seeked"
+	signalTrackAdd        = "/org/mpris/MediaPlayer2/Player/TrackAdded"
+	dbusFlags             = dbus.FlagAllowInteractiveAuthorization
 )
 
 func (w *RWin) getPlayerStatus() (string, error) {
@@ -56,17 +58,17 @@ func (w *RWin) getPlayerStatus() (string, error) {
 		obj        = w.mbus.Object(objName, audPath)
 	)
 
-	if common.Debug {
-		var path = obj.Path()
-		w.log.Printf("[DEBUG] Player Object Path is %q, is that valid? %t\n",
-			path,
-			path.IsValid())
-	}
+	// if common.Debug {
+	// 	var path = obj.Path()
+	// 	w.log.Printf("[DEBUG] Player Object Path is %q, is that valid? %t\n",
+	// 		path,
+	// 		path.IsValid())
+	// }
 
-	w.log.Printf("[TRACE] About to call method %s via DBus\n",
-		methodName)
+	// w.log.Printf("[TRACE] About to call method %s via DBus\n",
+	// 	methodName)
 
-	if call = obj.Call(methodName, 0); call == nil {
+	if call = obj.Call(methodName, dbusFlags); call == nil {
 		msg = fmt.Sprintf("Failed to call method %s on player",
 			methStatus)
 		w.log.Printf("[ERROR] %s\n", msg)
@@ -339,6 +341,7 @@ func (w *RWin) playerPlayProgram(p *objects.Program) {
 		err   error
 		c     *db.Database
 		files []objects.File
+		call  *dbus.Call
 		obj   = w.mbus.Object(objName, audPath)
 	)
 
@@ -358,77 +361,37 @@ func (w *RWin) playerPlayProgram(p *objects.Program) {
 	var filenames = make([]string, len(files))
 
 	for i, f := range files {
-		filenames[i] = f.Path
+		filenames[i] = "file://" + f.Path
 	}
 
-	obj.Call(methPlaylistAddFiles, dbus.FlagNoReplyExpected, filenames)
+	call = obj.Call(objMethod(audInterface, methPlaylistOpenFiles), dbus.FlagNoReplyExpected, filenames)
 
-	// for _, f := range files {
-	// for i := len(files) - 1; i >= 0; i-- {
-	// 	f := files[i]
+	time.Sleep(time.Millisecond * 250)
 
-	// 	w.log.Printf("[TRACE] Add %s to Playlist\n",
-	// 		f.DisplayTitle())
-
-	// 	// var (
-	// 	// 	val   dbus.Variant
-	// 	// 	track = dbus.ObjectPath(noTrack)
-	// 	// )
-
-	// 	// if val, err = obj.GetProperty(trackList); err != nil {
-	// 	// 	w.log.Printf("[ERROR] Cannot get TrackList %s: %s\n",
-	// 	// 		propTracklist,
-	// 	// 		err.Error())
-	// 	// 	track = dbus.ObjectPath(noTrack)
-	// 	// } else {
-	// 	// 	var list = val.Value().([]dbus.ObjectPath)
-
-	// 	// 	w.log.Printf("[DEBUG] %s = %T => %s\n%s\n",
-	// 	// 		trackList,
-	// 	// 		val,
-	// 	// 		spew.Sdump(val),
-	// 	// 		spew.Sdump(list),
-	// 	// 	)
-
-	// 	// 	if len(list) == 0 {
-	// 	// 		track = dbus.ObjectPath(noTrack)
-	// 	// 	} else {
-	// 	// 		track = list[len(list)-1]
-	// 	// 	}
-	// 	// }
-
-	// 	// var res = obj.Call(
-	// 	// 	addTrack,
-	// 	// 	0, // dbus.FlagNoReplyExpected,
-	// 	// 	f.PathURL(),
-	// 	// 	track, //dbus.ObjectPath(noTrack),
-	// 	// 	false,
-	// 	// )
-
-	// 	gtk.MainIterationDo(false)
-
-	// 	if res.Err != nil {
-	// 		w.log.Printf("[ERROR] DBus method call failed: %s\n",
-	// 			res.Err.Error())
-	// 	} else {
-	// 		if common.Debug {
-	// 			w.log.Printf("[DEBUG] AddTrack returned %s\n",
-	// 				spew.Sdump(res))
-	// 		}
-	// 		time.Sleep(time.Millisecond * 100)
-	// 	}
-	// }
-
-	// time.Sleep(time.Second)
-
-	for i := 0; i < 3; i++ {
-		gtk.MainIterationDo(false)
+	if call.Err != nil {
+		var msg = fmt.Sprintf("Failed to add files to playlist: %s",
+			call.Err.Error())
+		w.log.Printf("[ERROR] %s\n", msg)
+		w.displayMsg(msg)
+		return
 	}
 
-	obj.Call(
-		playerPlay,
-		dbus.FlagNoReplyExpected,
+	call = obj.Call(
+		objMethod(audInterface, methPlay),
+		dbus.FlagAllowInteractiveAuthorization|dbus.FlagNoReplyExpected,
 	)
+
+	time.Sleep(time.Millisecond * 250)
+
+	if call.Err != nil {
+		var msg = fmt.Sprintf("Failed to tell the player to play: %s",
+			call.Err.Error())
+		w.log.Printf("[ERROR] %s\n", msg)
+		w.displayMsg(msg)
+		return
+	}
+
+	w.log.Printf("[TRACE] Done. The player should now be playing %s\n", p.Title)
 
 	// TODO Jump to the current file and position!
 } // func (w *RWin) playerPlayProgram(p *objects.Program)
@@ -491,4 +454,10 @@ func (w *RWin) registerSignal() {
 
 func objMethod(intf, method string) string {
 	return intf + "." + method
-}
+} // func objMethod(intf, method string) string
+
+func idle(n int) {
+	for i := 0; i < n; i++ {
+		gtk.MainIterationDo(false)
+	}
+} // func idle(n int)

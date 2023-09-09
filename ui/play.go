@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 15. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2023-09-09 18:18:34 krylon>
+// Time-stamp: <2023-09-09 21:34:00 krylon>
 
 package ui
 
@@ -33,6 +33,7 @@ const (
 	methPlaylistCreate    = "NewPlaylist"
 	methPlaylistAddFiles  = "AddList"
 	methPlaylistOpenFiles = "OpenList"
+	methPlaylistRename    = "SetActivePlaylistName"
 	methPlay              = "Play"
 	trackInterface        = "org.mpris.MediaPlayer2.TrackList"
 	trackList             = "org.mpris.MediaPlayer2.TrackList.Tracks"
@@ -57,16 +58,6 @@ func (w *RWin) getPlayerStatus() (string, error) {
 		methodName = objMethod(audInterface, methStatus)
 		obj        = w.mbus.Object(objName, audPath)
 	)
-
-	// if common.Debug {
-	// 	var path = obj.Path()
-	// 	w.log.Printf("[DEBUG] Player Object Path is %q, is that valid? %t\n",
-	// 		path,
-	// 		path.IsValid())
-	// }
-
-	// w.log.Printf("[TRACE] About to call method %s via DBus\n",
-	// 	methodName)
 
 	if call = obj.Call(methodName, dbusFlags); call == nil {
 		msg = fmt.Sprintf("Failed to call method %s on player",
@@ -392,6 +383,12 @@ func (w *RWin) playerPlayProgram(p *objects.Program) {
 	}
 
 	w.log.Printf("[TRACE] Done. The player should now be playing %s\n", p.Title)
+
+	call = obj.Call(
+		objMethod(audInterface, methPlaylistRename),
+		dbus.FlagNoReplyExpected,
+		p.Title,
+	)
 
 	// TODO Jump to the current file and position!
 } // func (w *RWin) playerPlayProgram(p *objects.Program)

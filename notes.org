@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2023-09-09 21:34:13 krylon>
+# Time-stamp: <2023-09-10 19:03:41 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -133,6 +133,7 @@ yet how that would factor in.
      Turns out that after erasing my config file, VLC runs just fine. WTF?
 **** TODO Audacious
      :LOGBOOK:
+     CLOCK: [2023-09-10 So 17:59]--[2023-09-10 So 19:03] =>  1:04
      CLOCK: [2023-09-09 Sa 19:21]--[2023-09-09 Sa 21:34] =>  2:13
      CLOCK: [2023-09-09 Sa 17:19]--[2023-09-09 Sa 19:15] =>  1:56
      CLOCK: [2023-09-08 Fr 17:25]--[2023-09-09 Sa 00:56] =>  7:31

@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 15. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2023-09-09 21:34:00 krylon>
+// Time-stamp: <2023-09-10 19:03:50 krylon>
 
 package ui
 
@@ -35,6 +35,7 @@ const (
 	methPlaylistOpenFiles = "OpenList"
 	methPlaylistRename    = "SetActivePlaylistName"
 	methPlay              = "Play"
+	methPlaylistPosition  = "Position"
 	trackInterface        = "org.mpris.MediaPlayer2.TrackList"
 	trackList             = "org.mpris.MediaPlayer2.TrackList.Tracks"
 	noTrack               = "/org/mpris/MediaPlayer2/TrackList/NoTrack"
@@ -74,31 +75,57 @@ func (w *RWin) getPlayerStatus() (string, error) {
 
 	w.log.Printf("[TRACE] Player status is %s\n", str)
 
-	return str, nil
+	if !(str == "Playing" || str == "Paused") {
+		return str, nil
+	}
 
-	// var (
-	// 	err error
-	// 	str string
-	// 	val dbus.Variant
-	// 	obj = w.mbus.Object(objName, objPath)
-	// )
+	var (
+		ppos int
+	)
 
-	// // w.log.Printf("[TRACE] getPlayerStatus - ENTER\n")
+	if ppos, err = w.getPlaylistPosition(); err != nil {
+		return "", err
+	}
 
-	// if val, err = obj.GetProperty(propStatus); err != nil {
-	// 	w.log.Printf("[ERROR] Cannot get player status: %s\n",
-	// 		err.Error())
-	// 	return "", err
-	// }
-
-	// str = val.Value().(string)
-
-	// // w.log.Printf("[DEBUG] PlaybackStatus is %s\n",
-	// // 	str)
-
-	// if !(str == "Playing" || str == "Paused") {
-	// 	return str, nil
-	// }
+	/*
+			   ['title',
+		 'artist',
+		 'album',
+		 'album-artist',
+		 'comment',
+		 'genre',
+		 'year',
+		 'composer',
+		 'performer',
+		 'copyright',
+		 'date',
+		 'track-number',
+		 'length',
+		 'bitrate',
+		 'codec',
+		 'quality',
+		 'file-name',
+		 'file-path',
+		 'file-ext',
+		 'audio-file',
+		 'subsong-id',
+		 'subsong-num',
+		 'segment-start',
+		 'segment-end',
+		 'gain-album-gain',
+		 'gain-album-peak',
+		 'gain-track-gain',
+		 'gain-track-peak',
+		 'gain-gain-unit',
+		 'gain-peak-unit',
+		 'formatted-title',
+		 'description',
+		 'musicbrainz-id',
+		 'channels',
+		 'publisher',
+		 'catalog-number',
+		 'lyrics']
+	*/
 
 	// var (
 	// 	meta map[string]dbus.Variant
@@ -444,6 +471,25 @@ func (w *RWin) registerSignal() {
 		}
 	}()
 } // func (w *Rwin) registerSignal()
+
+func (w *RWin) getPlaylistPosition() (int, error) {
+	var (
+		pos uint32
+		err error
+		obj = w.mbus.Object(objName, audPath)
+	)
+
+	err = obj.Call(objMethod(audInterface, methPlaylistPosition), 0).Store(&pos)
+	if err != nil {
+		var msg = fmt.Sprintf("Cannot query playlist position: %s",
+			err.Error())
+		w.log.Printf("[ERROR] %s\n", msg)
+		w.displayMsg(msg)
+		return 0, err
+	}
+
+	return int(pos), err
+} // func (w *RWin) getPlaylistPosition() (int, error)
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////// Helpers ///////////////////////////////////////////////////////////

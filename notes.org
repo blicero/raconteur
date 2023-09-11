@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2023-09-10 19:03:41 krylon>
+# Time-stamp: <2023-09-11 21:28:55 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -18,25 +18,25 @@ yet how that would factor in.
 * Clock
   Here I keep track of the time I waste on this futile effort.
   #+BEGIN: clocktable :scope file :maxlevel 202 :emphasize t
-  #+CAPTION: Clock summary at [2023-09-09 Sa 21:34]
-  | Headline                   | Time       |            |         |       |
-  |----------------------------+------------+------------+---------+-------|
-  | *Total time*               | *4d 19:47* |            |         |       |
-  |----------------------------+------------+------------+---------+-------|
-  | *Moving parts*             | *4d 19:47* |            |         |       |
-  | \_  /Data types/           |            | /2:40/     |         |       |
-  | \_  /Database/             |            | /7:25/     |         |       |
-  | \_  /Scanner/              |            | /10:05/    |         |       |
-  | \_    Metadata             |            |            |    8:15 |       |
-  | \_      Monitor Folders    |            |            |         |  4:45 |
-  | \_  /GUI/                  |            | /3d 23:37/ |         |       |
-  | \_    Playback             |            |            | 2d 8:28 |       |
-  | \_      GStreamer          |            |            |         |  1:25 |
-  | \_      VLC                |            |            |         |  3:48 |
-  | \_      Audacious          |            |            |         | 12:34 |
-  | \_    TreeView             |            |            |    9:09 |       |
-  | \_      Multiple Selection |            |            |         |  7:33 |
-  | \_      Sorting            |            |            |         |  1:36 |
+  #+CAPTION: Clock summary at [2023-09-11 Mo 21:28]
+  | Headline                   | Time      |           |          |       |
+  |----------------------------+-----------+-----------+----------+-------|
+  | *Total time*               | *5d 0:41* |           |          |       |
+  |----------------------------+-----------+-----------+----------+-------|
+  | *Moving parts*             | *5d 0:41* |           |          |       |
+  | \_  /Data types/           |           | /2:40/    |          |       |
+  | \_  /Database/             |           | /7:25/    |          |       |
+  | \_  /Scanner/              |           | /10:05/   |          |       |
+  | \_    Metadata             |           |           |     8:15 |       |
+  | \_      Monitor Folders    |           |           |          |  4:45 |
+  | \_  /GUI/                  |           | /4d 4:31/ |          |       |
+  | \_    Playback             |           |           | 2d 13:22 |       |
+  | \_      GStreamer          |           |           |          |  1:25 |
+  | \_      VLC                |           |           |          |  3:48 |
+  | \_      Audacious          |           |           |          | 17:28 |
+  | \_    TreeView             |           |           |     9:09 |       |
+  | \_      Multiple Selection |           |           |          |  7:33 |
+  | \_      Sorting            |           |           |          |  1:36 |
   #+END:
 
 * Moving parts
@@ -133,6 +133,8 @@ yet how that would factor in.
      Turns out that after erasing my config file, VLC runs just fine. WTF?
 **** TODO Audacious
      :LOGBOOK:
+     CLOCK: [2023-09-11 Mo 19:15]--[2023-09-11 Mo 21:28] =>  2:13
+     CLOCK: [2023-09-11 Mo 09:28]--[2023-09-11 Mo 11:05] =>  1:37
      CLOCK: [2023-09-10 So 17:59]--[2023-09-10 So 19:03] =>  1:04
      CLOCK: [2023-09-09 Sa 19:21]--[2023-09-09 Sa 21:34] =>  2:13
      CLOCK: [2023-09-09 Sa 17:19]--[2023-09-09 Sa 19:15] =>  1:56

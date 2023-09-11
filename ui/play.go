@@ -2,14 +2,16 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 15. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2023-09-10 19:03:50 krylon>
+// Time-stamp: <2023-09-11 21:24:09 krylon>
 
 package ui
 
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/blicero/krylib"
@@ -36,6 +38,8 @@ const (
 	methPlaylistRename    = "SetActivePlaylistName"
 	methPlay              = "Play"
 	methPlaylistPosition  = "Position"
+	methFilename          = "SongFilename"
+	methFilePosition      = "Time"
 	trackInterface        = "org.mpris.MediaPlayer2.TrackList"
 	trackList             = "org.mpris.MediaPlayer2.TrackList.Tracks"
 	noTrack               = "/org/mpris/MediaPlayer2/TrackList/NoTrack"
@@ -55,17 +59,13 @@ func (w *RWin) getPlayerStatus() (string, error) {
 	var (
 		err        error
 		str, msg   string
-		call       *dbus.Call
 		methodName = objMethod(audInterface, methStatus)
 		obj        = w.mbus.Object(objName, audPath)
 	)
 
-	if call = obj.Call(methodName, dbusFlags); call == nil {
-		msg = fmt.Sprintf("Failed to call method %s on player",
-			methStatus)
-		w.log.Printf("[ERROR] %s\n", msg)
-		return "", errors.New(msg)
-	} else if err = call.Store(&str); err != nil {
+	// krylib.Trace()
+
+	if err = obj.Call(methodName, dbusFlags).Store(&str); err != nil {
 		msg = fmt.Sprintf("Failed to store return value of method %s: %s",
 			methStatus,
 			err.Error())
@@ -73,198 +73,106 @@ func (w *RWin) getPlayerStatus() (string, error) {
 		return "", errors.New(msg)
 	}
 
+	str = strings.ToLower(str)
 	w.log.Printf("[TRACE] Player status is %s\n", str)
 
-	if !(str == "Playing" || str == "Paused") {
+	if !(str == "playing" || str == "paused") {
 		return str, nil
 	}
 
 	var (
-		ppos int
+		ppos     int
+		fpos     int64
+		filename string
 	)
 
 	if ppos, err = w.getPlaylistPosition(); err != nil {
 		return "", err
+	} else if filename, err = w.getSongFilename(ppos); err != nil {
+		return "", err
+	} else if fpos, err = w.getSongPosition(); err != nil {
+		return "", err
 	}
 
-	/*
-			   ['title',
-		 'artist',
-		 'album',
-		 'album-artist',
-		 'comment',
-		 'genre',
-		 'year',
-		 'composer',
-		 'performer',
-		 'copyright',
-		 'date',
-		 'track-number',
-		 'length',
-		 'bitrate',
-		 'codec',
-		 'quality',
-		 'file-name',
-		 'file-path',
-		 'file-ext',
-		 'audio-file',
-		 'subsong-id',
-		 'subsong-num',
-		 'segment-start',
-		 'segment-end',
-		 'gain-album-gain',
-		 'gain-album-peak',
-		 'gain-track-gain',
-		 'gain-track-peak',
-		 'gain-gain-unit',
-		 'gain-peak-unit',
-		 'formatted-title',
-		 'description',
-		 'musicbrainz-id',
-		 'channels',
-		 'publisher',
-		 'catalog-number',
-		 'lyrics']
-	*/
+	msg = fmt.Sprintf("Currently playing %s",
+		filename)
+	w.log.Printf("[DEBUG] %s\n", msg)
+	// w.displayMsg(msg)
 
-	// var (
-	// 	meta map[string]dbus.Variant
-	// 	pos  int64
-	// 	ok   bool
-	// )
+	var (
+		c        *db.Database
+		f        *objects.File
+		p        *objects.Program
+		txStatus bool
+	)
 
-	// if val, err = obj.GetProperty(propPosition); err != nil {
-	// 	w.log.Printf("[ERROR] Cannot get Position: %s\n",
-	// 		err.Error())
-	// 	return "", err
-	// } else if pos, ok = val.Value().(int64); !ok {
-	// 	w.log.Printf("[ERROR] Cannot convert result to int64: %T\n",
-	// 		val.Value())
-	// 	return "", fmt.Errorf("Cannot convert result to int64: %T",
-	// 		val.Value())
-	// } else if val, err = obj.GetProperty(propMeta); err != nil {
-	// 	w.log.Printf("[ERROR] Cannot get Property %s: %s\n",
-	// 		propMeta,
-	// 		err.Error())
-	// 	return "", err
-	// } else if meta, ok = val.Value().(map[string]dbus.Variant); !ok {
-	// 	w.log.Printf("[ERROR] Wrong type for %s: %T\n",
-	// 		propMeta,
-	// 		val.Value())
-	// 	return "", fmt.Errorf("Wrong type for %s: %T",
-	// 		propMeta,
-	// 		val.Value())
-	// }
+	c = w.pool.Get()
+	defer w.pool.Put(c)
 
-	// var sec = time.Microsecond * time.Duration(pos)
+	if err = c.Begin(); err != nil {
+		w.log.Printf("[ERROR] Cannot start transaction: %s\n",
+			err.Error())
+		return "", err
+	}
 
-	// w.log.Printf("[DEBUG] Player is at position %s\n",
-	// 	sec)
+	defer func() {
+		if txStatus {
+			w.log.Printf("[TRACE] COMMIT Transaction\n")
+			c.Commit() // nolint: errcheck
+		} else {
+			w.log.Printf("[TRACE] ROLLBACK Transaction\n")
+			c.Rollback() // nolint: errcheck
+		}
+	}()
 
-	// if common.Debug {
-	// 	for k, v := range meta {
-	// 		w.log.Printf("[DEBUG] Meta %-15s => (%T) %#v\n",
-	// 			k,
-	// 			v.Value(),
-	// 			v.Value())
-	// 	}
-	// }
+	if f, err = c.FileGetByPath(filename); err != nil {
+		msg = fmt.Sprintf("Cannot get file %s from database: %s",
+			filename,
+			err.Error())
+		w.log.Printf("[ERROR] %s\n", msg)
+		w.displayMsg(msg)
+		return "", err
+	} else if f == nil {
+		w.log.Printf("[DEBUG] File %s was not found in database\n",
+			filename)
+		return "", nil
+	} else if err = c.FileSetPosition(f, fpos); err != nil {
+		w.log.Printf("[ERROR] Cannot set Position for File %q to %s: %s\n",
+			f.DisplayTitle(),
+			fpos,
+			err.Error())
+		return "", err
+	} else if f.ProgramID == 0 {
+		w.log.Printf("[DEBUG] File %q does not belong to any Program.\n",
+			f.DisplayTitle())
+		return str, nil
+	} else if p, err = c.ProgramGetByID(f.ProgramID); err != nil {
+		w.log.Printf("[ERROR] Cannot lookup Program %d: %s\n",
+			f.ProgramID,
+			err.Error())
+		return "", err
+	} else if p == nil {
+		w.log.Printf("[CANTHAPPEN] Program %d was not found in database.\n",
+			f.ProgramID)
+		return "",
+			fmt.Errorf("Program %d was not found in database",
+				f.ProgramID)
+	} else if p.CurFile == f.ID {
+		// return str, nil
+	} else if err = c.ProgramSetCurFile(p, f); err != nil {
+		w.log.Printf("[ERROR] Cannot set current file for Program %q (%d) to %d (%q): %s\n",
+			p.Title,
+			p.ID,
+			f.ID,
+			f.DisplayTitle(),
+			err.Error())
+		return "", err
+	}
 
-	// var (
-	// 	uriRaw, uriEsc string
-	// 	fileURL        *url.URL
-	// )
+	w.log.Printf("[DEBUG] Set txStatus = true\n")
+	txStatus = true
 
-	// uriRaw = meta["xesam:url"].Value().(string)
-
-	// if uriEsc, err = url.PathUnescape(uriRaw); err != nil {
-	// 	w.log.Printf("[ERROR] Cannot un-escape URL path %q: %s\n",
-	// 		uriRaw,
-	// 		err.Error())
-	// 	return "", err
-	// } else if fileURL, err = url.Parse(uriEsc); err != nil {
-	// 	w.log.Printf("[ERROR] Cannot parse URL %q: %s\n",
-	// 		uriEsc,
-	// 		err.Error())
-	// 	return "", err
-	// } else if common.Debug {
-	// 	w.log.Printf("[DEBUG] Currently playing %s at %s\n",
-	// 		fileURL.Path,
-	// 		sec)
-	// }
-
-	// var (
-	// 	c        *db.Database
-	// 	f        *objects.File
-	// 	p        *objects.Program
-	// 	txStatus bool
-	// )
-
-	// c = w.pool.Get()
-	// defer w.pool.Put(c)
-
-	// if err = c.Begin(); err != nil {
-	// 	w.log.Printf("[ERROR] Cannot start transaction: %s\n",
-	// 		err.Error())
-	// 	return "", err
-	// }
-
-	// defer func() {
-	// 	if txStatus {
-	// 		w.log.Printf("[TRACE] COMMIT Transaction\n")
-	// 		c.Commit() // nolint: errcheck
-	// 	} else {
-	// 		w.log.Printf("[TRACE] ROLLBACK Transaction\n")
-	// 		c.Rollback() // nolint: errcheck
-	// 	}
-	// }()
-
-	// if f, err = c.FileGetByPath(fileURL.Path); err != nil {
-	// 	w.log.Printf("[ERROR] Cannot look for File %s: %s\n",
-	// 		fileURL.Path,
-	// 		err.Error())
-	// 	return "", err
-	// } else if f == nil {
-	// 	w.log.Printf("[DEBUG] File %s was not found in database\n",
-	// 		fileURL.Path)
-	// 	return "", nil
-	// } else if err = c.FileSetPosition(f, pos); err != nil {
-	// 	w.log.Printf("[ERROR] Cannot set Position for File %q to %s: %s\n",
-	// 		f.DisplayTitle(),
-	// 		sec,
-	// 		err.Error())
-	// 	return "", err
-	// } else if f.ProgramID == 0 {
-	// 	w.log.Printf("[DEBUG] File %q does not belong to any Program.\n",
-	// 		f.DisplayTitle())
-	// 	return str, nil
-	// } else if p, err = c.ProgramGetByID(f.ProgramID); err != nil {
-	// 	w.log.Printf("[ERROR] Cannot lookup Program %d: %s\n",
-	// 		f.ProgramID,
-	// 		err.Error())
-	// 	return "", err
-	// } else if p == nil {
-	// 	w.log.Printf("[CANTHAPPEN] Program %d was not found in database.\n",
-	// 		f.ProgramID)
-	// 	return "",
-	// 		fmt.Errorf("Program %d was not found in database",
-	// 			f.ProgramID)
-	// } else if p.CurFile == f.ID {
-	// 	// return str, nil
-	// } else if err = c.ProgramSetCurFile(p, f); err != nil {
-	// 	w.log.Printf("[ERROR] Cannot set current file for Program %q (%d) to %d (%q): %s\n",
-	// 		p.Title,
-	// 		p.ID,
-	// 		f.ID,
-	// 		f.DisplayTitle(),
-	// 		err.Error())
-	// 	return "", err
-	// }
-
-	// w.log.Printf("[DEBUG] Set txStatus = true\n")
-	// txStatus = true
-
-	// return str, nil
+	return str, nil
 } // func (w *RWin) getPlayerStatus() (string, error)
 
 func (w *RWin) playerCreate() error {
@@ -490,6 +398,55 @@ func (w *RWin) getPlaylistPosition() (int, error) {
 
 	return int(pos), err
 } // func (w *RWin) getPlaylistPosition() (int, error)
+
+func (w *RWin) getSongFilename(pos int) (string, error) {
+	var (
+		err         error
+		uriStr, msg string
+		obj         = w.mbus.Object(objName, audPath)
+	)
+
+	if err = obj.Call(objMethod(audInterface, methFilename), 0, uint32(pos)).Store(&uriStr); err != nil {
+		msg = fmt.Sprintf("Cannot query filename for position %d: %s",
+			pos,
+			err.Error())
+		w.log.Printf("[ERROR] %s\n", msg)
+		w.displayMsg(msg)
+		return "", err
+	}
+
+	var fileURI *url.URL
+
+	if fileURI, err = url.Parse(uriStr); err != nil {
+		msg = fmt.Sprintf("Cannot parse file URL (%s): %s",
+			uriStr,
+			err.Error())
+		w.log.Printf("[ERROR] %s\n", msg)
+		w.displayMsg(msg)
+		return "", err
+	}
+
+	return fileURI.Path, nil
+} // func (w *RWin) getSongFilename(pos int) (string, error)
+
+func (w *RWin) getSongPosition() (int64, error) {
+	var (
+		err error
+		msg string
+		pos uint32
+		obj = w.mbus.Object(objName, audPath)
+	)
+
+	if err = obj.Call(objMethod(audInterface, methFilePosition), 0).Store(&pos); err != nil {
+		msg = fmt.Sprintf("Error querying playback position: %s",
+			err.Error())
+		w.log.Printf("[ERROR] %s\n", msg)
+		w.displayMsg(msg)
+		return 0, err
+	}
+
+	return int64(pos) / 1000, nil
+} // func (w *RWin) getSongPosition() (int64, error)
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////// Helpers ///////////////////////////////////////////////////////////

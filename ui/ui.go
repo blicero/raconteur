@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2023-09-09 18:19:14 krylon>
+// Time-stamp: <2023-09-11 10:31:53 krylon>
 
 package ui
 
@@ -261,23 +261,23 @@ func Create() (*RWin, error) {
 	glib.IdleAdd(win.ckFileQueue)
 	glib.TimeoutAdd(uint(rescanInterval.Milliseconds()), win.refreshFolders)
 
-	// go func() {
-	// 	var (
-	// 		ex error
-	// 		// s  string
-	// 	)
+	go func() {
+		var (
+			ex error
+			// s  string
+		)
 
-	// 	for {
-	// 		time.Sleep(time.Second * 5)
-	// 		if _, ex = win.getPlayerStatus(); ex != nil {
-	// 			win.log.Printf("[ERROR] Cannot query player status: %s\n",
-	// 				ex.Error())
-	// 		} /*else {
-	// 			win.log.Printf("[DEBUG] Player is %s\n", s)
-	// 		}*/
+		for {
+			time.Sleep(time.Second * 5)
+			if _, ex = win.getPlayerStatus(); ex != nil {
+				win.log.Printf("[ERROR] Cannot query player status: %s\n",
+					ex.Error())
+			} /*else {
+				win.log.Printf("[DEBUG] Player is %s\n", s)
+			}*/
 
-	// 	}
-	// }()
+		}
+	}()
 
 	win.win.ShowAll()
 	win.win.SetSizeRequest(960, 540)

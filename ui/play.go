@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 15. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2023-09-11 21:24:09 krylon>
+// Time-stamp: <2023-09-12 01:10:07 krylon>
 
 package ui
 
@@ -32,12 +32,15 @@ const (
 	audInterface          = "org.atheme.audacious"
 	audPath               = "/org/atheme/audacious"
 	methStatus            = "Status"
+	methPlay              = "Play"
 	methPlaylistCreate    = "NewPlaylist"
 	methPlaylistAddFiles  = "AddList"
 	methPlaylistOpenFiles = "OpenList"
 	methPlaylistRename    = "SetActivePlaylistName"
-	methPlay              = "Play"
 	methPlaylistPosition  = "Position"
+	methPlaylistCnt       = "NumberOfPlaylists"
+	methPlaylistSetActive = "SetActivePlaylist"
+	methPlaylistGetName   = "GetActivePlaylistName"
 	methFilename          = "SongFilename"
 	methFilePosition      = "Time"
 	trackInterface        = "org.mpris.MediaPlayer2.TrackList"
@@ -264,18 +267,37 @@ func (w *RWin) playerPlayProgram(p *objects.Program) {
 		krylib.TraceInfo())
 
 	var (
-		err   error
-		c     *db.Database
-		files []objects.File
-		call  *dbus.Call
-		obj   = w.mbus.Object(objName, audPath)
+		err                      error
+		msg                      string
+		c                        *db.Database
+		files                    []objects.File
+		playlistNames, fileNames []string
+		call                     *dbus.Call
+		obj                      = w.mbus.Object(objName, audPath)
 	)
 
 	c = w.pool.Get()
 	defer w.pool.Put(c)
 
+	// Before I create a new playlist, I should check if the playlist
+	// already exists and use that. Shouldn't be that hard, but tedious.
+
+	if playlistNames, err = w.getPlaylistNames(); err != nil {
+		return
+	}
+
+	for i, name := range playlistNames {
+		if name == p.Title {
+			w.log.Printf("[DEBUG] Playlist %s is already open (%d)\n",
+				p.Title,
+				i)
+			obj.Call(objMethod(audInterface, methPlaylistSetActive), 0, int32(i))
+			goto PLAY
+		}
+	}
+
 	if files, err = c.FileGetByProgram(p); err != nil {
-		var msg = fmt.Sprintf("Cannot get Files for Program %q (%d): %s",
+		msg = fmt.Sprintf("Cannot get Files for Program %q (%d): %s",
 			p.Title,
 			p.ID,
 			err.Error())
@@ -284,24 +306,25 @@ func (w *RWin) playerPlayProgram(p *objects.Program) {
 		return
 	}
 
-	var filenames = make([]string, len(files))
+	fileNames = make([]string, len(files))
 
 	for i, f := range files {
-		filenames[i] = "file://" + f.Path
+		fileNames[i] = "file://" + f.Path
 	}
 
-	call = obj.Call(objMethod(audInterface, methPlaylistOpenFiles), dbus.FlagNoReplyExpected, filenames)
+	call = obj.Call(objMethod(audInterface, methPlaylistOpenFiles), dbus.FlagNoReplyExpected, fileNames)
 
 	time.Sleep(time.Millisecond * 250)
 
 	if call.Err != nil {
-		var msg = fmt.Sprintf("Failed to add files to playlist: %s",
+		msg = fmt.Sprintf("Failed to add files to playlist: %s",
 			call.Err.Error())
 		w.log.Printf("[ERROR] %s\n", msg)
 		w.displayMsg(msg)
 		return
 	}
 
+PLAY:
 	call = obj.Call(
 		objMethod(audInterface, methPlay),
 		dbus.FlagAllowInteractiveAuthorization|dbus.FlagNoReplyExpected,
@@ -310,7 +333,7 @@ func (w *RWin) playerPlayProgram(p *objects.Program) {
 	time.Sleep(time.Millisecond * 250)
 
 	if call.Err != nil {
-		var msg = fmt.Sprintf("Failed to tell the player to play: %s",
+		msg = fmt.Sprintf("Failed to tell the player to play: %s",
 			call.Err.Error())
 		w.log.Printf("[ERROR] %s\n", msg)
 		w.displayMsg(msg)
@@ -447,6 +470,57 @@ func (w *RWin) getSongPosition() (int64, error) {
 
 	return int64(pos) / 1000, nil
 } // func (w *RWin) getSongPosition() (int64, error)
+
+func (w *RWin) getPlaylistCount() (int32, error) {
+	var (
+		err error
+		msg string
+		cnt int32
+		obj = w.mbus.Object(objName, audPath)
+	)
+
+	if err = obj.Call(objMethod(audInterface, methPlaylistCnt), 0).Store(&cnt); err != nil {
+		msg = fmt.Sprintf("Cannot query number of playlists: %s",
+			err.Error())
+		w.log.Printf("[ERROR] %s\n", msg)
+		w.displayMsg(msg)
+	}
+
+	return cnt, err
+} // func (w *RWin) getPlaylistCount() (int32, error)
+
+func (w *RWin) getPlaylistNames() ([]string, error) {
+	var (
+		err error
+		msg string
+		cnt int32
+		obj = w.mbus.Object(objName, audPath)
+	)
+
+	if cnt, err = w.getPlaylistCount(); err != nil {
+		return nil, err
+	}
+
+	var (
+		idx   int32
+		names = make([]string, cnt)
+	)
+
+	for idx = 0; idx < cnt; idx++ {
+		var name string
+		obj.Call(objMethod(audInterface, methPlaylistSetActive), 0, idx)
+		if err = obj.Call(objMethod(audInterface, methPlaylistGetName), 0).Store(&name); err != nil {
+			msg = fmt.Sprintf("Cannot query active playlist name: %s", err.Error())
+			w.log.Printf("[ERROR] %s\n", msg)
+			w.displayMsg(msg)
+			return nil, err
+		}
+
+		names[idx] = name
+	}
+
+	return names, nil
+} // func (w *RWin) getPlaylistNames() ([]string, error)
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////// Helpers ///////////////////////////////////////////////////////////

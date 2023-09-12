@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2023-09-12 17:48:30 krylon>
+# Time-stamp: <2023-09-12 23:08:34 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -18,34 +18,47 @@ yet how that would factor in.
 * Clock
   Here I keep track of the time I waste on this futile effort.
   #+BEGIN: clocktable :scope file :maxlevel 202 :emphasize t
-  #+CAPTION: Clock summary at [2023-09-12 Di 17:48]
+  #+CAPTION: Clock summary at [2023-09-12 Di 23:08]
   | Headline                   | Time      |           |          |       |
   |----------------------------+-----------+-----------+----------+-------|
-  | *Total time*               | *5d 2:07* |           |          |       |
+  | *Total time*               | *5d 2:16* |           |          |       |
   |----------------------------+-----------+-----------+----------+-------|
-  | *Moving parts*             | *5d 2:07* |           |          |       |
-  | \_  /Data types/           |           | /2:40/    |          |       |
-  | \_  /Database/             |           | /7:25/    |          |       |
-  | \_  /Scanner/              |           | /10:05/   |          |       |
+  | *Moving parts [5/7]*       | *5d 2:16* |           |          |       |
+  | \_  /Data types [0/0]/     |           | /2:40/    |          |       |
+  | \_  /Database [0/0]/       |           | /7:25/    |          |       |
+  | \_  /Scanner [2/2]/        |           | /10:05/   |          |       |
   | \_    Metadata             |           |           |     8:15 |       |
   | \_      Monitor Folders    |           |           |          |  4:45 |
-  | \_  /GUI/                  |           | /4d 5:57/ |          |       |
+  | \_  /GUI [4/6]/            |           | /4d 6:06/ |          |       |
+  | \_    Editing metadata     |           |           |     0:09 |       |
   | \_    Playback             |           |           | 2d 14:48 |       |
   | \_      GStreamer          |           |           |          |  1:25 |
   | \_      VLC                |           |           |          |  3:48 |
-  | \_      Audacious          |           |           |          | 18:54 |
+  | \_      Audacious [0/0]    |           |           |          | 18:54 |
   | \_    TreeView             |           |           |     9:09 |       |
   | \_      Multiple Selection |           |           |          |  7:33 |
   | \_      Sorting            |           |           |          |  1:36 |
   #+END:
 
-* Moving parts
-** Data types
+* Moving parts [5/7]
+  :PROPERTIES:
+  :COOKIE_DATA: todo recursive
+  :VISIBILITY: children
+  :END:
+** Data types [0/0]
+   :PROPERTIES:
+   :COOKIE_DATA: todo recursive
+   :VISIBILITY: children
+   :END:
    :LOGBOOK:
    CLOCK: [2021-09-06 Mo 20:34]--[2021-09-06 Mo 23:14] =>  2:40
    :END:
    I will need types to describe what I am dealing with.
-** Database
+** Database [0/0]
+   :PROPERTIES:
+   :COOKIE_DATA: todo recursive
+   :VISIBILITY: children
+   :END:
    :LOGBOOK:
    CLOCK: [2022-06-07 Di 20:20]--[2022-06-07 Di 21:14] =>  0:54
    CLOCK: [2021-09-11 Sa 22:27]--[2021-09-12 So 00:06] =>  1:39
@@ -55,7 +68,11 @@ yet how that would factor in.
    :END:
    I am going to use SQLite, because for our use case, it is awesome.
    Plus, I like SQL.
-** Scanner
+** Scanner [2/2]
+   :PROPERTIES:
+   :COOKIE_DATA: todo recursive
+   :VISIBILITY: children
+   :END:
    :LOGBOOK:
    CLOCK: [2021-09-07 Di 20:36]--[2021-09-07 Di 22:26] =>  1:50
    :END:
@@ -75,7 +92,11 @@ yet how that would factor in.
      CLOCK: [2022-06-20 Mo 19:42]--[2022-06-20 Mo 21:59] =>  2:17
      CLOCK: [2022-06-20 Mo 17:49]--[2022-06-20 Mo 19:36] =>  1:47
      :END:
-** GUI
+** GUI [4/6]
+   :PROPERTIES:
+   :COOKIE_DATA: todo recursive
+   :VISIBILITY: children
+   :END:
    :LOGBOOK:
    CLOCK: [2022-06-11 Sa 16:35]--[2022-06-11 Sa 17:57] =>  1:22
    CLOCK: [2022-06-10 Fr 16:33]--[2022-06-10 Fr 22:05] =>  5:32
@@ -93,7 +114,12 @@ yet how that would factor in.
    Like I said, we're going to use gotk3, the Go bindings to Gtk3. I think
    Gtk4 is a thing, but ... whatever, I'm still slightly annoyed I cannot just
    use Gtk2, although the changes seem to not be that drastic.
-*** IMPLEMENT Playback
+*** TODO Editing metadata
+    :LOGBOOK:
+    CLOCK: [2023-09-12 Di 21:36]--[2023-09-12 Di 21:45] =>  0:09
+    :END:
+*** DONE Playback
+    CLOSED: [2023-09-12 Di 20:14]
     :LOGBOOK:
     CLOCK: [2022-06-28 Di 18:59]--[2022-06-28 Di 21:57] =>  2:58
     CLOCK: [2022-06-27 Mo 21:41]--[2022-06-27 Mo 22:13] =>  0:32
@@ -114,7 +140,8 @@ yet how that would factor in.
     for which Go bindings exist.
     Also, if I use an external player, I /could/ just start a process, like
     gPodder does, or I could use dbus to control the player. ???
-**** TODO GStreamer
+**** CANCELLED GStreamer
+CLOSED: [2023-09-12 Di 17:51]
      :LOGBOOK:
      CLOCK: [2022-06-30 Do 18:57]--[2022-06-30 Do 20:22] =>  1:25
      :END:
@@ -131,7 +158,11 @@ yet how that would factor in.
      reliably, and I have no clue whatsoever why that might be.
      ...
      Turns out that after erasing my config file, VLC runs just fine. WTF?
-**** TODO Audacious
+**** TODO Audacious [0/0]
+     :PROPERTIES:
+     :COOKIE_DATA: todo recursive
+     :VISIBILITY: children
+     :END:
      :LOGBOOK:
      CLOCK: [2023-09-12 Di 17:07]--[2023-09-12 Di 17:48] =>  0:41
      CLOCK: [2023-09-12 Di 00:30]--[2023-09-12 Di 01:15] =>  0:45
@@ -154,7 +185,8 @@ yet how that would factor in.
      CLOCK: [2022-06-13 Mo 17:09]--[2022-06-13 Mo 21:27] =>  4:18
      CLOCK: [2022-06-11 Sa 19:35]--[2022-06-11 Sa 22:50] =>  3:15
      :END:
-**** TODO Sorting
+**** SUSPENDED Sorting
+CLOSED: [2023-09-12 Di 17:51]
      :LOGBOOK:
      CLOCK: [2022-06-11 Sa 17:59]--[2022-06-11 Sa 19:35] =>  1:36
      :END:

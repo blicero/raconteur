@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 15. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2023-09-12 01:10:07 krylon>
+// Time-stamp: <2023-09-12 17:45:07 krylon>
 
 package ui
 
@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/blicero/krylib"
+	"github.com/blicero/raconteur/common"
 	"github.com/blicero/raconteur/db"
 	"github.com/blicero/raconteur/objects"
 	"github.com/davecgh/go-spew/spew"
@@ -33,6 +34,7 @@ const (
 	audPath               = "/org/atheme/audacious"
 	methStatus            = "Status"
 	methPlay              = "Play"
+	methSeek              = "Seek"
 	methPlaylistCreate    = "NewPlaylist"
 	methPlaylistAddFiles  = "AddList"
 	methPlaylistOpenFiles = "OpenList"
@@ -41,6 +43,7 @@ const (
 	methPlaylistCnt       = "NumberOfPlaylists"
 	methPlaylistSetActive = "SetActivePlaylist"
 	methPlaylistGetName   = "GetActivePlaylistName"
+	methPlaylistJump      = "Jump"
 	methFilename          = "SongFilename"
 	methFilePosition      = "Time"
 	trackInterface        = "org.mpris.MediaPlayer2.TrackList"
@@ -65,6 +68,9 @@ func (w *RWin) getPlayerStatus() (string, error) {
 		methodName = objMethod(audInterface, methStatus)
 		obj        = w.mbus.Object(objName, audPath)
 	)
+
+	w.lock.Lock()
+	defer w.lock.Unlock()
 
 	// krylib.Trace()
 
@@ -266,6 +272,9 @@ func (w *RWin) playerPlayProgram(p *objects.Program) {
 	defer fmt.Printf("[TRACE] EXIT %s\n",
 		krylib.TraceInfo())
 
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
 	var (
 		err                      error
 		msg                      string
@@ -278,6 +287,22 @@ func (w *RWin) playerPlayProgram(p *objects.Program) {
 
 	c = w.pool.Get()
 	defer w.pool.Put(c)
+
+	if files, err = c.FileGetByProgram(p); err != nil {
+		msg = fmt.Sprintf("Cannot get Files for Program %q (%d): %s",
+			p.Title,
+			p.ID,
+			err.Error())
+		w.log.Println("[ERROR] " + msg)
+		w.displayMsg(msg)
+		return
+	}
+
+	if common.Debug {
+		w.log.Printf("[DEBUG] Loaded %d files for program %s:\n%v\n\n",
+			len(files),
+			files)
+	}
 
 	// Before I create a new playlist, I should check if the playlist
 	// already exists and use that. Shouldn't be that hard, but tedious.
@@ -294,16 +319,6 @@ func (w *RWin) playerPlayProgram(p *objects.Program) {
 			obj.Call(objMethod(audInterface, methPlaylistSetActive), 0, int32(i))
 			goto PLAY
 		}
-	}
-
-	if files, err = c.FileGetByProgram(p); err != nil {
-		msg = fmt.Sprintf("Cannot get Files for Program %q (%d): %s",
-			p.Title,
-			p.ID,
-			err.Error())
-		w.log.Println("[ERROR] " + msg)
-		w.displayMsg(msg)
-		return
 	}
 
 	fileNames = make([]string, len(files))
@@ -324,11 +339,14 @@ func (w *RWin) playerPlayProgram(p *objects.Program) {
 		return
 	}
 
-PLAY:
 	call = obj.Call(
-		objMethod(audInterface, methPlay),
-		dbus.FlagAllowInteractiveAuthorization|dbus.FlagNoReplyExpected,
+		objMethod(audInterface, methPlaylistRename),
+		dbus.FlagNoReplyExpected,
+		p.Title,
 	)
+
+PLAY:
+	call = obj.Call(objMethod(audInterface, methPlay), dbus.FlagNoReplyExpected)
 
 	time.Sleep(time.Millisecond * 250)
 
@@ -342,13 +360,30 @@ PLAY:
 
 	w.log.Printf("[TRACE] Done. The player should now be playing %s\n", p.Title)
 
-	call = obj.Call(
-		objMethod(audInterface, methPlaylistRename),
-		dbus.FlagNoReplyExpected,
-		p.Title,
-	)
-
 	// TODO Jump to the current file and position!
+	var fid = p.CurFile
+	for idx, f := range files {
+		if f.ID == fid {
+			w.log.Printf("[DEBUG] Jump to file %d (%q)\n",
+				f.ID,
+				f.Title)
+			obj.Call(
+				objMethod(audInterface, methPlaylistJump),
+				dbus.FlagNoReplyExpected,
+				uint32(idx))
+			time.Sleep(time.Millisecond * 250)
+			w.log.Printf("[DEBUG] Seek to position %s\n",
+				time.Second*time.Duration(f.Position))
+			obj.Call(
+				objMethod(audInterface, methSeek),
+				dbus.FlagNoReplyExpected,
+				uint32(f.Position)*1000)
+			return
+		}
+	}
+
+	w.log.Printf("[ERROR] Did not find current file %d\n",
+		p.CurFile)
 } // func (w *RWin) playerPlayProgram(p *objects.Program)
 
 func (w *RWin) playerClearPlaylist() error {

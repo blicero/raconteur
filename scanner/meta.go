@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 14. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2022-06-27 20:34:57 krylon>
+// Time-stamp: <2023-09-12 20:02:08 krylon>
 
 package scanner
 
@@ -28,6 +28,7 @@ type metadata struct {
 }
 
 var episodePatterns = []*regexp.Regexp{
+	regexp.MustCompile(`^(?:\d+-)?(\d+)`),
 	regexp.MustCompile("(?i)(?:ep(?:isode)?|show)?\\s*(\\d+)"),
 	regexp.MustCompile("(?i)^[A-Z]{1,4}\\s?(\\d+)"),
 	regexp.MustCompile("(?i)ep[.]?\\s+(\\d+)"),

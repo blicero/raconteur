@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2023-09-11 10:31:53 krylon>
+// Time-stamp: <2023-09-13 20:35:08 krylon>
 
 package ui
 
@@ -1231,7 +1231,34 @@ func (w *RWin) fileSetProgram(iter *gtk.TreeIter, f *objects.File, p *objects.Pr
 } // func (w *RWin) fileSetProgram(f *objects.File, p *objects.Program)
 
 func (w *RWin) editFile(f *objects.File, iter *gtk.TreeIter) {
-	w.displayMsg("IMPLEMENTME!")
+	var (
+		err           error
+		dlg           *gtk.Dialog
+		dbox          *gtk.Box
+		grid          *gtk.Grid
+		titleE, urlE  *gtk.Entry
+		trackE, discE *gtk.SpinButton
+	)
+
+	if dlg, err = gtk.DialogNewWithButtons(
+		"Edit Title",
+		w.win,
+		gtk.DIALOG_MODAL,
+		[]any{
+			"_Cancel",
+			gtk.RESPONSE_CANCEL,
+			"_OK",
+			gtk.RESPONSE_OK,
+		},
+	); err != nil {
+		w.log.Printf("[ERROR] Cannot create dialog for editing File %s: %s\n",
+			f.Title,
+			err.Error())
+		return
+	}
+
+	defer dlg.Close()
+
 } // func (w *RWin) editFile(f *objects.File, iter *gtk.TreeIter)
 
 func (w *RWin) editProgram(p *objects.Program, iter *gtk.TreeIter) {
@@ -1255,7 +1282,7 @@ func (w *RWin) editProgram(p *objects.Program, iter *gtk.TreeIter) {
 			gtk.RESPONSE_OK,
 		},
 	); err != nil {
-		w.log.Printf("[ERROR] Cannot create dialog for editing  Program %s: %s\n",
+		w.log.Printf("[ERROR] Cannot create dialog for editing Program %s: %s\n",
 			p.Title,
 			err.Error())
 		return

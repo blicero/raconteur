@@ -7,13 +7,13 @@ stopped playing and resumes from there.
 
 Playing audio directly from within the application appeared to involve
 a lot of work, so I am delegating that to
-[https://audacious-media-player.org/](audacious), but I still consider
+[audacious](https://audacious-media-player.org/), but I still consider
 playing audio myself a long term goal.
 
 ## Dependencies
 
 * Go 1.18 or newer
-* [https://audacious-media-player.org/](audacious), obviously. My
+* [Audacious](https://audacious-media-player.org/), obviously. My
   developments system has version 4.3.1 installed, I have not yet
   tested how it works with other versions and consider that not a
   priority for now. Any feedback is welcome, though.

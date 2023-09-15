@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2023-09-14 19:36:14 krylon>
+# Time-stamp: <2023-09-15 17:21:09 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -18,26 +18,26 @@ yet how that would factor in.
 * Clock
   Here I keep track of the time I waste on this futile effort.
   #+BEGIN: clocktable :scope file :maxlevel 202 :emphasize t
-  #+CAPTION: Clock summary at [2023-09-14 Do 19:36]
-  | Headline                   | Time      |           |          |       |
-  |----------------------------+-----------+-----------+----------+-------|
-  | *Total time*               | *5d 3:58* |           |          |       |
-  |----------------------------+-----------+-----------+----------+-------|
-  | *Moving parts [5/7]*       | *5d 3:58* |           |          |       |
-  | \_  /Data types [0/0]/     |           | /2:40/    |          |       |
-  | \_  /Database [0/0]/       |           | /7:25/    |          |       |
-  | \_  /Scanner [2/2]/        |           | /10:05/   |          |       |
-  | \_    Metadata             |           |           |     8:15 |       |
-  | \_      Monitor Folders    |           |           |          |  4:45 |
-  | \_  /GUI [5/6]/            |           | /4d 7:48/ |          |       |
-  | \_    Editing metadata     |           |           |     1:51 |       |
-  | \_    Playback             |           |           | 2d 14:48 |       |
-  | \_      GStreamer          |           |           |          |  1:25 |
-  | \_      VLC                |           |           |          |  3:48 |
-  | \_      Audacious [0/0]    |           |           |          | 18:54 |
-  | \_    TreeView             |           |           |     9:09 |       |
-  | \_      Multiple Selection |           |           |          |  7:33 |
-  | \_      Sorting            |           |           |          |  1:36 |
+  #+CAPTION: Clock summary at [2023-09-15 Fr 17:21]
+  | Headline                   | Time      |            |          |       |
+  |----------------------------+-----------+------------+----------+-------|
+  | *Total time*               | *5d 7:40* |            |          |       |
+  |----------------------------+-----------+------------+----------+-------|
+  | *Moving parts [5/7]*       | *5d 7:40* |            |          |       |
+  | \_  /Data types [0/0]/     |           | /2:40/     |          |       |
+  | \_  /Database [0/0]/       |           | /7:25/     |          |       |
+  | \_  /Scanner [2/2]/        |           | /10:05/    |          |       |
+  | \_    Metadata             |           |            |     8:15 |       |
+  | \_      Monitor Folders    |           |            |          |  4:45 |
+  | \_  /GUI [5/6]/            |           | /4d 11:30/ |          |       |
+  | \_    Editing metadata     |           |            |     5:33 |       |
+  | \_    Playback             |           |            | 2d 14:48 |       |
+  | \_      GStreamer          |           |            |          |  1:25 |
+  | \_      VLC                |           |            |          |  3:48 |
+  | \_      Audacious [0/0]    |           |            |          | 18:54 |
+  | \_    TreeView             |           |            |     9:09 |       |
+  | \_      Multiple Selection |           |            |          |  7:33 |
+  | \_      Sorting            |           |            |          |  1:36 |
   #+END:
 
 * Moving parts [5/7]
@@ -116,6 +116,7 @@ yet how that would factor in.
    use Gtk2, although the changes seem to not be that drastic.
 *** TODO Editing metadata
     :LOGBOOK:
+    CLOCK: [2023-09-15 Fr 12:23]--[2023-09-15 Fr 16:05] =>  3:42
     CLOCK: [2023-09-14 Do 18:10]--[2023-09-14 Do 19:36] =>  1:26
     CLOCK: [2023-09-13 Mi 20:19]--[2023-09-13 Mi 20:35] =>  0:16
     CLOCK: [2023-09-12 Di 21:36]--[2023-09-12 Di 21:45] =>  0:09

@@ -1374,9 +1374,9 @@ func (w *RWin) editFile(f *objects.File, iter *gtk.TreeIter) {
 
 	defer func() {
 		if txstatus {
-			d.Commit()
+			d.Commit() // nolint: errcheck
 		} else {
-			d.Rollback()
+			d.Rollback() // nolint: errcheck
 		}
 	}()
 

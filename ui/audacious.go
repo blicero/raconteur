@@ -2,14 +2,14 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 08. 09. 2023 by Benjamin Walkenhorst
 // (c) 2023 Benjamin Walkenhorst
-// Time-stamp: <2023-09-11 21:24:02 krylon>
+// Time-stamp: <2023-09-15 14:10:44 krylon>
 
 package ui
 
 // We try to use audacious as our player. It offers a much richer DBus API than
 // MPris2 does, so I'll try to use that to its fullest.
 
-var songFields = []string{
+var songFields = []string{ // nolint: unused
 	"title",
 	"artist",
 	"album",

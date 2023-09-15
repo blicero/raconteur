@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 15. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2023-09-12 17:45:07 krylon>
+// Time-stamp: <2023-09-15 14:11:29 krylon>
 
 package ui
 
@@ -146,7 +146,7 @@ func (w *RWin) getPlayerStatus() (string, error) {
 			filename)
 		return "", nil
 	} else if err = c.FileSetPosition(f, fpos); err != nil {
-		w.log.Printf("[ERROR] Cannot set Position for File %q to %s: %s\n",
+		w.log.Printf("[ERROR] Cannot set Position for File %q to %d: %s\n",
 			f.DisplayTitle(),
 			fpos,
 			err.Error())
@@ -207,7 +207,7 @@ func (w *RWin) playerCreate() error {
 
 	w.playerActive.Store(true)
 	go w.playerTimeout(cmd)
-	w.playerRegisterSignals()
+	w.playerRegisterSignals() // nolint: errcheck
 
 	return nil
 } // func (w *RWin) playerCreate() error
@@ -255,7 +255,7 @@ func (w *RWin) playerRegisterSignals() error {
 	// return nil
 } // func (w *RWin) playerRegisterSignals() error
 
-func (w *RWin) playerProcessSignals() {
+func (w *RWin) playerProcessSignals() { // nolint: unused
 	krylib.Trace()
 	for v := range w.sigq {
 		w.log.Printf("[INFO] %T => %#v\n\n%s\n",
@@ -301,6 +301,7 @@ func (w *RWin) playerPlayProgram(p *objects.Program) {
 	if common.Debug {
 		w.log.Printf("[DEBUG] Loaded %d files for program %s:\n%v\n\n",
 			len(files),
+			p.Title,
 			files)
 	}
 
@@ -339,7 +340,7 @@ func (w *RWin) playerPlayProgram(p *objects.Program) {
 		return
 	}
 
-	call = obj.Call(
+	obj.Call(
 		objMethod(audInterface, methPlaylistRename),
 		dbus.FlagNoReplyExpected,
 		p.Title,
@@ -386,7 +387,7 @@ PLAY:
 		p.CurFile)
 } // func (w *RWin) playerPlayProgram(p *objects.Program)
 
-func (w *RWin) playerClearPlaylist() error {
+func (w *RWin) playerClearPlaylist() error { // nolint: unused
 	krylib.Trace()
 	defer fmt.Printf("[TRACE] EXIT %s\n",
 		krylib.TraceInfo())
@@ -417,7 +418,7 @@ func (w *RWin) playerClearPlaylist() error {
 // But subscribing to signals is not that trivial, hence I leave this
 // commented-out method here for future reference.
 
-func (w *RWin) registerSignal() {
+func (w *RWin) registerSignal() { // nolint: unused
 	w.log.Printf("[TRACE] Subscribing to signals on DBus\n")
 	w.mbus.BusObject().Call(
 		objName,
@@ -565,7 +566,7 @@ func objMethod(intf, method string) string {
 	return intf + "." + method
 } // func objMethod(intf, method string) string
 
-func idle(n int) {
+func idle(n int) { // nolint: unused
 	for i := 0; i < n; i++ {
 		gtk.MainIterationDo(false)
 	}

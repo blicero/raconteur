@@ -2,8 +2,9 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2023-09-14 19:31:49 krylon>
+// Time-stamp: <2023-09-15 15:55:54 krylon>
 
+// Package ui provides the graphical user interface.
 package ui
 
 import (
@@ -11,6 +12,7 @@ import (
 	"log"
 	"math"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -1418,12 +1420,16 @@ func (w *RWin) editFile(f *objects.File, iter *gtk.TreeIter) {
 
 func (w *RWin) editProgram(p *objects.Program, iter *gtk.TreeIter) {
 	var (
-		err                    error
-		dlg                    *gtk.Dialog
-		dbox                   *gtk.Box
-		grid                   *gtk.Grid
-		titleE, creatorE, urlE *gtk.Entry
-		titleL, creatorL, urlL *gtk.Label
+		err                           error
+		msg                           string
+		c                             *db.Database
+		dlg                           *gtk.Dialog
+		dbox                          *gtk.Box
+		grid                          *gtk.Grid
+		titleE, creatorE, urlE        *gtk.Entry
+		titleL, creatorL, urlL, fileL *gtk.Label
+		curfileBox                    *gtk.ComboBoxText
+		files                         []objects.File
 	)
 
 	if dlg, err = gtk.DialogNewWithButtons(
@@ -1465,6 +1471,10 @@ func (w *RWin) editProgram(p *objects.Program, iter *gtk.TreeIter) {
 		w.log.Printf("[ERROR] Cannot create Creator Label: %s\n",
 			err.Error())
 		return
+	} else if fileL, err = gtk.LabelNew("Current file:"); err != nil {
+		w.log.Printf("[ERROR] Cannot create File Label: %s\n",
+			err.Error())
+		return
 	} else if urlE, err = gtk.EntryNew(); err != nil {
 		w.log.Printf("[ERROR] Cannot create URL Entry: %s\n",
 			err.Error())
@@ -1483,18 +1493,56 @@ func (w *RWin) editProgram(p *objects.Program, iter *gtk.TreeIter) {
 		return
 	}
 
+	c = w.pool.Get()
+	defer w.pool.Put(c)
+
+	if files, err = c.FileGetByProgram(p); err != nil {
+		msg = fmt.Sprintf("Failed to load files for Program %d (%q): %s",
+			p.ID,
+			p.Title,
+			err.Error())
+		w.log.Printf("[ERROR] %s\n", msg)
+		w.displayMsg(msg)
+		return
+	} else if curfileBox, err = gtk.ComboBoxTextNew(); err != nil {
+		msg = fmt.Sprintf("Cannot create ComboBox for Files: %s", err.Error())
+		w.log.Printf("[ERROR] %s\n", msg)
+		w.displayMsg(msg)
+		return
+	}
+
+	var (
+		fileID    = make(map[string]int64, len(files))
+		fileNames = make([]string, len(files))
+		activeIdx int
+	)
+
+	for idx, f := range files {
+		fileID[f.Title] = f.ID
+		fileNames[idx] = f.Title
+		curfileBox.Append(strconv.FormatInt(f.ID, 10), f.Title)
+		if p.CurFile == f.ID {
+			activeIdx = idx
+		}
+	}
+
+	curfileBox.SetActive(activeIdx)
+
 	grid.InsertColumn(0)
 	grid.InsertColumn(1)
 	grid.InsertRow(0)
 	grid.InsertRow(1)
 	grid.InsertRow(2)
+	grid.InsertRow(3)
 
 	grid.Attach(titleL, 0, 0, 1, 1)
 	grid.Attach(urlL, 0, 1, 1, 1)
 	grid.Attach(creatorL, 0, 2, 1, 1)
+	grid.Attach(fileL, 0, 3, 1, 1)
 	grid.Attach(titleE, 1, 0, 1, 1)
 	grid.Attach(urlE, 1, 1, 1, 1)
 	grid.Attach(creatorE, 1, 2, 1, 1)
+	grid.Attach(curfileBox, 1, 3, 1, 1)
 
 	titleE.SetText(p.Title)
 	urlE.SetText(p.URLString())
@@ -1523,17 +1571,11 @@ func (w *RWin) editProgram(p *objects.Program, iter *gtk.TreeIter) {
 		return
 	}
 
-	var (
-		ttl, uri, creator string
-		c                 *db.Database
-	)
+	var ttl, uri, creator string
 
 	ttl, _ = titleE.GetText()
 	uri, _ = urlE.GetText()
 	creator, _ = creatorE.GetText()
-
-	c = w.pool.Get()
-	defer w.pool.Put(c)
 
 	var txStatus = true
 

@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 15. 06. 2022 by Benjamin Walkenhorst
 // (c) 2022 Benjamin Walkenhorst
-// Time-stamp: <2023-09-15 14:11:29 krylon>
+// Time-stamp: <2023-09-15 19:31:43 krylon>
 
 package ui
 
@@ -20,7 +20,6 @@ import (
 	"github.com/blicero/raconteur/objects"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/godbus/dbus/v5"
-	"github.com/gotk3/gotk3/gtk"
 )
 
 // nolint: deadcode,unused,varcheck
@@ -557,17 +556,3 @@ func (w *RWin) getPlaylistNames() ([]string, error) {
 
 	return names, nil
 } // func (w *RWin) getPlaylistNames() ([]string, error)
-
-////////////////////////////////////////////////////////////////////////////////
-//////////// Helpers ///////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-func objMethod(intf, method string) string {
-	return intf + "." + method
-} // func objMethod(intf, method string) string
-
-func idle(n int) { // nolint: unused
-	for i := 0; i < n; i++ {
-		gtk.MainIterationDo(false)
-	}
-} // func idle(n int)

@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2023-09-15 20:28:49 krylon>
+# Time-stamp: <2023-09-16 14:42:09 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -18,10 +18,10 @@ yet how that would factor in.
 * Clock
   Here I keep track of the time I waste on this futile effort.
   #+BEGIN: clocktable :scope file :maxlevel 202 :emphasize t
-  #+CAPTION: Clock summary at [2023-09-15 Fr 20:28]
+  #+CAPTION: Clock summary at [2023-09-16 Sa 14:42]
   | Headline                          | Time      |            |          |       |
   |-----------------------------------+-----------+------------+----------+-------|
-  | *Total time*                      | *5d 8:45* |            |          |       |
+  | *Total time*                      | *5d 9:13* |            |          |       |
   |-----------------------------------+-----------+------------+----------+-------|
   | *Moving parts [5/7]*              | *5d 7:40* |            |          |       |
   | \_  /Data types [0/0]/            |           | /2:40/     |          |       |
@@ -38,8 +38,8 @@ yet how that would factor in.
   | \_    TreeView                    |           |            |     9:09 |       |
   | \_      Multiple Selection        |           |            |          |  7:33 |
   | \_      Sorting                   |           |            |          |  1:36 |
-  | *Refactoring [0/1]*               | *1:05*    |            |          |       |
-  | \_  /Split UI into smaller files/ |           | /1:05/     |          |       |
+  | *Refactoring [0/1]*               | *1:33*    |            |          |       |
+  | \_  /Split UI into smaller files/ |           | /1:33/     |          |       |
   #+END:
 
 * Moving parts [5/7]
@@ -208,6 +208,7 @@ CLOSED: [2023-09-12 Di 17:51]
   :END:
 ** TODO Split UI into smaller files
    :LOGBOOK:
+   CLOCK: [2023-09-16 Sa 14:13]--[2023-09-16 Sa 14:41] =>  0:28
    CLOCK: [2023-09-15 Fr 19:23]--[2023-09-15 Fr 20:28] =>  1:05
    :END:
    The UI package has mainly two pretty large files, I would like to split

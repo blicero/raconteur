@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 15. 09. 2023 by Benjamin Walkenhorst
 // (c) 2023 Benjamin Walkenhorst
-// Time-stamp: <2023-09-15 19:25:14 krylon>
+// Time-stamp: <2023-09-16 21:24:48 krylon>
 
 package ui
 
@@ -360,13 +360,38 @@ func (w *RWin) editProgram(p *objects.Program, iter *gtk.TreeIter) {
 	ttl, _ = titleE.GetText()
 	uri, _ = urlE.GetText()
 	creator, _ = creatorE.GetText()
-
-	var txStatus = true
+	var (
+		txStatus bool
+		setIdx   = curfileBox.GetActive()
+	)
 
 	if err = c.Begin(); err != nil {
 		w.log.Printf("[ERROR] Cannot initiate transaction: %s\n",
 			err.Error())
 		return
+	}
+
+	defer func() {
+		if txStatus {
+			if err = c.Commit(); err != nil {
+				w.log.Printf("[ERROR] Cannot commit transaction: %s\n",
+					err.Error())
+			}
+		} else if err = c.Rollback(); err != nil {
+			w.log.Printf("[ERROR] Cannot rollback transaction: %s\n",
+				err.Error())
+		}
+	}()
+
+	if setIdx != activeIdx {
+		w.log.Printf("[DEBUG] Active file: %d (%s) -> %d (%s)\n",
+			activeIdx, files[activeIdx].DisplayTitle(),
+			setIdx, files[setIdx].DisplayTitle())
+		if err = c.ProgramSetCurFile(p, &files[setIdx]); err != nil {
+			w.log.Printf("[ERROR] Cannot update current file: %s\n",
+				err.Error())
+			return
+		}
 	}
 
 	if ttl != p.Title {
@@ -376,11 +401,10 @@ func (w *RWin) editProgram(p *objects.Program, iter *gtk.TreeIter) {
 		if err = c.ProgramSetTitle(p, ttl); err != nil {
 			w.log.Printf("[ERROR] Cannot update title: %s\n",
 				err.Error())
-			txStatus = false
-			goto FINISH
-		} else {
-			w.store.SetValue(iter, 1, ttl) // nolint: errcheck
+			return
 		}
+
+		w.store.SetValue(iter, 1, ttl) // nolint: errcheck
 	}
 
 	if uri != p.URLString() {
@@ -397,8 +421,7 @@ func (w *RWin) editProgram(p *objects.Program, iter *gtk.TreeIter) {
 			w.log.Printf("[ERROR] Cannot update URL for Program %q: %s\n",
 				p.Title,
 				err.Error())
-			txStatus = false
-			goto FINISH
+			return
 		}
 	}
 
@@ -410,19 +433,9 @@ func (w *RWin) editProgram(p *objects.Program, iter *gtk.TreeIter) {
 			w.log.Printf("[ERROR] Cannot update Creator for Program %q: %s\n",
 				p.Title,
 				err.Error())
-			txStatus = false
-			goto FINISH
+			return
 		}
 	}
 
-FINISH:
-	if txStatus {
-		if err = c.Commit(); err != nil {
-			w.log.Printf("[ERROR] Cannot commit transaction: %s\n",
-				err.Error())
-		}
-	} else if err = c.Rollback(); err != nil {
-		w.log.Printf("[ERROR] Cannot rollback transaction: %s\n",
-			err.Error())
-	}
+	txStatus = true
 } // func (w *RWin) editProgram(p *objects.Program)

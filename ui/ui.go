@@ -36,18 +36,6 @@ const (
 	rescanInterval = time.Second * 600
 )
 
-// type tabContent struct {
-// 	vbox   *gtk.Box
-// 	sbox   *gtk.Box
-// 	lbl    *gtk.Label
-// 	search *gtk.Entry
-// 	store  gtk.ITreeModel
-// 	view   *gtk.TreeView
-// 	scr    *gtk.ScrolledWindow
-// }
-
-// type cellEditHandlerFactory func(int) func(*gtk.CellRendererText, string, string)
-
 type column struct {
 	colType glib.Type
 	title   string

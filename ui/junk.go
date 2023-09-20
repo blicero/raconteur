@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 16. 09. 2023 by Benjamin Walkenhorst
 // (c) 2023 Benjamin Walkenhorst
-// Time-stamp: <2023-09-16 14:41:17 krylon>
+// Time-stamp: <2023-09-16 21:40:20 krylon>
 
 package ui
 
@@ -89,3 +89,15 @@ package ui
 
 // 	return menu, nil
 // } // func (w *RWin) mkContextMenu(iter *gtk.TreeIter, fid int64) (*gtk.Menu, error)
+
+// type tabContent struct {
+// 	vbox   *gtk.Box
+// 	sbox   *gtk.Box
+// 	lbl    *gtk.Label
+// 	search *gtk.Entry
+// 	store  gtk.ITreeModel
+// 	view   *gtk.TreeView
+// 	scr    *gtk.ScrolledWindow
+// }
+
+// type cellEditHandlerFactory func(int) func(*gtk.CellRendererText, string, string)

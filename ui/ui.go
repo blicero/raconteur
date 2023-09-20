@@ -2,12 +2,13 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2023-09-16 14:15:55 krylon>
+// Time-stamp: <2023-09-19 18:08:39 krylon>
 
 // Package ui provides the graphical user interface.
 package ui
 
 import (
+	"embed"
 	"fmt"
 	"log"
 	"math"
@@ -27,6 +28,9 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 )
+
+//go:embed icons
+var icons embed.FS // nolint: unused
 
 // rescanInterval is set to a very low value intentionally for purposes
 // of development/testing/debugging. Once I've done that, I should set it
@@ -106,6 +110,12 @@ type RWin struct {
 	log          *log.Logger
 	win          *gtk.Window
 	mainBox      *gtk.Box
+	playBox      *gtk.Box
+	playB        *gtk.Button
+	stopB        *gtk.Button
+	pauseIcon    *gtk.Image
+	playIcon     *gtk.Image
+	stopIcon     *gtk.Image
 	searchBox    *gtk.Box
 	searchLbl    *gtk.Label
 	searchEntry  *gtk.Entry

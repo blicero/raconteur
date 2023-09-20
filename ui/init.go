@@ -2,13 +2,14 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 16. 09. 2023 by Benjamin Walkenhorst
 // (c) 2023 Benjamin Walkenhorst
-// Time-stamp: <2023-09-16 14:17:07 krylon>
+// Time-stamp: <2023-09-20 16:48:10 krylon>
 
 package ui
 
 import (
 	"fmt"
 	"math"
+	"path/filepath"
 	"time"
 
 	"github.com/blicero/raconteur/common"
@@ -17,6 +18,7 @@ import (
 	"github.com/blicero/raconteur/objects"
 	"github.com/blicero/raconteur/scanner"
 	"github.com/godbus/dbus/v5"
+	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 )
@@ -52,6 +54,17 @@ func Create() (*RWin, error) {
 		win.log.Printf("[ERROR] Cannot create main Box: %s\n",
 			err.Error())
 		return nil, err
+	} else if win.playBox, err = gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 1); err != nil {
+		win.log.Printf("[ERROR] Cannot create play Box: %s\n",
+			err.Error())
+		return nil, err
+	} else if win.playB, err = gtk.ButtonNew(); err != nil {
+		win.log.Printf("[ERROR] Cannot create play Button: %s\n",
+			err.Error())
+		return nil, err
+	} else if win.stopB, err = gtk.ButtonNew(); err != nil {
+		win.log.Printf("[ERROR] Cannot create stop Button: %s\n",
+			err.Error())
 	} else if win.menu, err = gtk.MenuBarNew(); err != nil {
 		win.log.Printf("[ERROR] Cannot create menu bar: %s\n",
 			err.Error())
@@ -119,11 +132,32 @@ func Create() (*RWin, error) {
 		win.view.AppendColumn(col)
 	}
 
+	// Set the icons for the buttons
+	if win.pauseIcon, err = readIcon("media-playback-pause.png"); err != nil {
+		win.log.Printf("[ERROR] Cannot load icon Pause: %s\n",
+			err.Error())
+		return nil, err
+	} else if win.playIcon, err = readIcon("media-playback-start.png"); err != nil {
+		win.log.Printf("[ERROR] Cannot load icon Play: %s\n",
+			err.Error())
+		return nil, err
+	} else if win.stopIcon, err = readIcon("media-playback-stop.png"); err != nil {
+		win.log.Printf("[ERROR] Cannot load icon Stop: %s\n",
+			err.Error())
+		return nil, err
+	}
+
+	win.playB.SetImage(win.playIcon)
+	win.stopB.SetImage(win.stopIcon)
+
+	win.playBox.Add(win.playB)
+	win.playBox.Add(win.stopB)
 	win.searchBox.Add(win.searchLbl)
 	win.searchBox.Add(win.searchEntry)
 	win.win.Add(win.mainBox)
 	win.scr.Add(win.view)
 	win.mainBox.PackStart(win.menu, false, false, 1)
+	win.mainBox.PackStart(win.playBox, false, false, 1)
 	win.mainBox.PackStart(win.searchBox, false, false, 1)
 	win.mainBox.PackStart(win.scr, true, true, 1)
 	win.mainBox.PackStart(win.statusbar, false, false, 1)
@@ -393,3 +427,27 @@ func (w *RWin) initializeMenu() error {
 
 	return nil
 } // func (w *RWin) initializeMenu() error
+
+func readIcon(name string) (*gtk.Image, error) {
+	var (
+		err         error
+		path        string
+		content     []byte
+		icon, small *gdk.Pixbuf
+		img         *gtk.Image
+	)
+
+	path = filepath.Join("icons", name)
+
+	if content, err = icons.ReadFile(path); err != nil {
+		return nil, err
+	} else if icon, err = gdk.PixbufNewFromDataOnly(content); err != nil {
+		return nil, err
+	} else if small, err = icon.ScaleSimple(64, 64, gdk.INTERP_HYPER); err != nil {
+		return nil, err
+	} else if img, err = gtk.ImageNewFromPixbuf(small); err != nil {
+		return nil, err
+	}
+
+	return img, nil
+} // func readIcon(name string) (*gtk.Image, error)

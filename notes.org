@@ -1,5 +1,5 @@
 # -*- mode: org; fill-column: 78; -*-
-# Time-stamp: <2023-09-16 21:26:25 krylon>
+# Time-stamp: <2023-09-21 09:52:17 krylon>
 #
 #+TAGS: go(g) internals(i) ui(u) bug(b) feature(f)
 #+TAGS: database(d) design(e), meditation(m)
@@ -18,28 +18,29 @@ yet how that would factor in.
 * Clock
   Here I keep track of the time I waste on this futile effort.
   #+BEGIN: clocktable :scope file :maxlevel 202 :emphasize t
-  #+CAPTION: Clock summary at [2023-09-16 Sa 21:26]
-  | Headline                          | Time       |            |          |       |
-  |-----------------------------------+------------+------------+----------+-------|
-  | *Total time*                      | *5d 13:00* |            |          |       |
-  |-----------------------------------+------------+------------+----------+-------|
-  | *Moving parts [5/7]*              | *5d 11:27* |            |          |       |
-  | \_  /Data types [0/0]/            |            | /2:40/     |          |       |
-  | \_  /Database [0/0]/              |            | /7:25/     |          |       |
-  | \_  /Scanner [2/2]/               |            | /10:05/    |          |       |
-  | \_    Metadata                    |            |            |     8:15 |       |
-  | \_      Monitor Folders           |            |            |          |  4:45 |
-  | \_  /GUI [5/6]/                   |            | /4d 15:17/ |          |       |
-  | \_    Editing metadata            |            |            |     9:20 |       |
-  | \_    Playback                    |            |            | 2d 14:48 |       |
-  | \_      GStreamer                 |            |            |          |  1:25 |
-  | \_      VLC                       |            |            |          |  3:48 |
-  | \_      Audacious [0/0]           |            |            |          | 18:54 |
-  | \_    TreeView                    |            |            |     9:09 |       |
-  | \_      Multiple Selection        |            |            |          |  7:33 |
-  | \_      Sorting                   |            |            |          |  1:36 |
-  | *Refactoring [0/1]*               | *1:33*     |            |          |       |
-  | \_  /Split UI into smaller files/ |            | /1:33/     |          |       |
+  #+CAPTION: Clock summary at [2023-09-21 Do 09:52]
+  | Headline                          | Time      |           |         |       |
+  |-----------------------------------+-----------+-----------+---------+-------|
+  | *Total time*                      | *6d 3:15* |           |         |       |
+  |-----------------------------------+-----------+-----------+---------+-------|
+  | *Moving parts [5/7]*              | *6d 1:42* |           |         |       |
+  | \_  /Data types [0/0]/            |           | /2:40/    |         |       |
+  | \_  /Database [0/0]/              |           | /7:25/    |         |       |
+  | \_  /Scanner [2/2]/               |           | /10:05/   |         |       |
+  | \_    Metadata                    |           |           |    8:15 |       |
+  | \_      Monitor Folders           |           |           |         |  4:45 |
+  | \_  /GUI [5/7]/                   |           | /5d 5:32/ |         |       |
+  | \_    Editing metadata            |           |           |    9:20 |       |
+  | \_    Playback                    |           |           | 3d 5:03 |       |
+  | \_      Control from the UI       |           |           |         | 14:15 |
+  | \_      GStreamer                 |           |           |         |  1:25 |
+  | \_      VLC                       |           |           |         |  3:48 |
+  | \_      Audacious [0/0]           |           |           |         | 18:54 |
+  | \_    TreeView                    |           |           |    9:09 |       |
+  | \_      Multiple Selection        |           |           |         |  7:33 |
+  | \_      Sorting                   |           |           |         |  1:36 |
+  | *Refactoring [0/1]*               | *1:33*    |           |         |       |
+  | \_  /Split UI into smaller files/ |           | /1:33/    |         |       |
   #+END:
 
 * Moving parts [5/7]
@@ -94,7 +95,7 @@ yet how that would factor in.
      CLOCK: [2022-06-20 Mo 19:42]--[2022-06-20 Mo 21:59] =>  2:17
      CLOCK: [2022-06-20 Mo 17:49]--[2022-06-20 Mo 19:36] =>  1:47
      :END:
-** GUI [5/6]
+** GUI [5/7]
    :PROPERTIES:
    :COOKIE_DATA: todo recursive
    :VISIBILITY: children
@@ -146,6 +147,14 @@ yet how that would factor in.
     for which Go bindings exist.
     Also, if I use an external player, I /could/ just start a process, like
     gPodder does, or I could use dbus to control the player. ???
+**** TODO Control from the UI
+     :LOGBOOK:
+     CLOCK: [2023-09-20 Mi 16:13]--[2023-09-20 Mi 21:51] =>  5:38
+     CLOCK: [2023-09-19 Di 16:28]--[2023-09-19 Di 20:40] =>  4:12
+     CLOCK: [2023-09-18 Mo 19:02]--[2023-09-18 Mo 20:46] =>  1:44
+     CLOCK: [2023-09-17 So 16:21]--[2023-09-17 So 19:02] =>  2:41
+     :END:
+     I can start playing from the UI now, but I cannot stop, pause or seek. 
 **** CANCELLED GStreamer
      CLOSED: [2023-09-12 Di 17:51]
      :LOGBOOK:
@@ -197,7 +206,7 @@ yet how that would factor in.
      CLOCK: [2022-06-11 Sa 19:35]--[2022-06-11 Sa 22:50] =>  3:15
      :END:
 **** SUSPENDED Sorting
-CLOSED: [2023-09-12 Di 17:51]
+     CLOSED: [2023-09-12 Di 17:51]
      :LOGBOOK:
      CLOCK: [2022-06-11 Sa 17:59]--[2022-06-11 Sa 19:35] =>  1:36
      :END:

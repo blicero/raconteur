@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 12. 09. 2021 by Benjamin Walkenhorst
 // (c) 2021 Benjamin Walkenhorst
-// Time-stamp: <2023-09-19 18:08:39 krylon>
+// Time-stamp: <2023-09-20 21:35:33 krylon>
 
 // Package ui provides the graphical user interface.
 package ui
@@ -786,6 +786,14 @@ func (w *RWin) playProgram(p *objects.Program) {
 
 	w.playerPlayProgram(p)
 } // func (w *RWin) playProgram(p *objects.Program)
+
+func (w *RWin) playbackPlayPause() {
+	w.log.Println("[DEBUG] Play/Pause button was clicked")
+} // func (w *RWin) playbackPlayPause()
+
+func (w *RWin) playbackStop() {
+	w.log.Println("[DEBUG] Stop button was clicked")
+} // func (w *RWin) playbackStop()
 
 func (w *RWin) cmpIter(m *gtk.TreeModel, a, b *gtk.TreeIter) int {
 	var (

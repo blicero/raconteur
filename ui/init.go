@@ -2,7 +2,7 @@
 // -*- mode: go; coding: utf-8; -*-
 // Created on 16. 09. 2023 by Benjamin Walkenhorst
 // (c) 2023 Benjamin Walkenhorst
-// Time-stamp: <2023-09-20 16:48:10 krylon>
+// Time-stamp: <2023-09-20 21:36:22 krylon>
 
 package ui
 
@@ -172,8 +172,9 @@ func Create() (*RWin, error) {
 		return nil, err
 	}
 
+	win.playB.Connect("clicked", win.playbackPlayPause)
+	win.stopB.Connect("clicked", win.playbackStop)
 	win.win.Connect("destroy", gtk.MainQuit)
-
 	win.view.Connect("button-press-event", win.handleFileListClick)
 
 	win.ticker = time.NewTicker(ckFileInterval)
@@ -431,19 +432,19 @@ func (w *RWin) initializeMenu() error {
 func readIcon(name string) (*gtk.Image, error) {
 	var (
 		err         error
-		path        string
+		path        = filepath.Join("icons", name)
 		content     []byte
 		icon, small *gdk.Pixbuf
 		img         *gtk.Image
 	)
 
-	path = filepath.Join("icons", name)
+	const iconSize = 24
 
 	if content, err = icons.ReadFile(path); err != nil {
 		return nil, err
 	} else if icon, err = gdk.PixbufNewFromDataOnly(content); err != nil {
 		return nil, err
-	} else if small, err = icon.ScaleSimple(64, 64, gdk.INTERP_HYPER); err != nil {
+	} else if small, err = icon.ScaleSimple(iconSize, iconSize, gdk.INTERP_HYPER); err != nil {
 		return nil, err
 	} else if img, err = gtk.ImageNewFromPixbuf(small); err != nil {
 		return nil, err
